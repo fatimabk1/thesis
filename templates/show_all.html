@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<body>
+	<h2>Grocery Inventory</h2>
+	<br>
+	<table>
+		<thead>
+			<th>Item Name</th>
+			<th>Characteristic</th>
+			<th>Brand</th>
+			<th>Quantity</th>
+		</thead>
+		<tbody>
+			{% for item in items %}
+				<tr>{{item.item_name}}</tr>
+				<tr>{{item.characteristic}}</tr>
+				<tr>{{item.brand}}</tr>
+				<tr>{{item.quantity}}</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+	<br>
+	<br>
+</body>
+</html>
