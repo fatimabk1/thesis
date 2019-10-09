@@ -4,6 +4,8 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 class inventory(db.Model):
+	__tablename__   = "inventory"
+	
 	grp_id 			= db.Column(db.Integer, primary_key=True, ForeignKey("product.grp_id"), ForeignKey("price.grp_id"))
 	shelved_stock   = db.Column(db.Integer)
 	back_stock		= db.Column(db.Integer)
@@ -33,12 +35,12 @@ class price(db.Model):
 
 class revenue(db.Model):
 	rev_id			= db.Column(db.Integer, primary_key=True)
-	timestamp		= db.Column(db.DateTime)
+	stamp		= db.Column(db.DateTime)
 	value			= db.Column(db.Float)
 
 class cost(db.Model):
 	cost_id			= db.Column(db.Integer, primary_key=True)
-	timestamp 		= db.Column(db.DateTime)
+	stamp	 		= db.Column(db.DateTime)
 	value			= db.Column(db.Float)
 	ctype			= db.Column(db.String(30))
 	# ctype refers to cost type: labor, stock, or overhead
@@ -46,8 +48,6 @@ class cost(db.Model):
 class employee(db.Model):
 	emp_id			= db.Column(db.Integer, primary_key=True)
 	role_id 		= db.Column(db.Integer, ForeignKey("role.role_id"))
-	name			= db.Column(db.String(50))
-	age				= db.Column(db.Integer)
 
 class role(db.Model):
 	role_id 		= db.Column(db.Integer, primary_key=True, ForeignKey("employee.role_id"))
