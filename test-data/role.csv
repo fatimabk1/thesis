@@ -1,0 +1,8 @@
+role_id,role,hr_salary,max_hrs
+1,manager,20,40
+2,stocker_ft,11.5,20
+3,stocker_pt,10.5,20
+4,cashier_ft,9.5,20
+5,cashier_pt,8.5,20
+6,stocker_young,10.5,20
+7,cashier_young,8.5,20

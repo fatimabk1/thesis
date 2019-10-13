@@ -5,7 +5,7 @@ db = SQLAlchemy()
 
 class inventory(db.Model):
 	__tablename__   = "inventory"
-	
+
 	grp_id 			= db.Column(db.Integer, primary_key=True, ForeignKey("product.grp_id"), ForeignKey("price.grp_id"))
 	shelved_stock   = db.Column(db.Integer)
 	back_stock		= db.Column(db.Integer)
@@ -55,8 +55,3 @@ class role(db.Model):
 	hr_salary		= db.Column(db.Float)
 	max_hrs			= db.Column(db.Integer)
 	# max_hrs refers to max hours an employee can work per week
-
-
-
-
-
