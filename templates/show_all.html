@@ -5,21 +5,26 @@
 	<br>
 	<table>
 		<thead>
-			<th>Item Name</th>
-			<th>Characteristic</th>
-			<th>Brand</th>
-			<th>Quantity</th>
+			<th>Product ID</th>
+			<th>Shelved Stock</th>
+			<th>Back Stock</th>
+			<th>Cart Stock</th>
+			<th>Expiration Date</th>
 		</thead>
 		<tbody>
 			{% for item in items %}
-				<tr>{{item.item_name}}</tr>
-				<tr>{{item.characteristic}}</tr>
-				<tr>{{item.brand}}</tr>
-				<tr>{{item.quantity}}</tr>
+			<tr>
+				<td>{{item.grp_id}}</td>
+				<td>{{item.shelved_stock}}</td>
+				<td>{{item.back_stock}}</td>
+				<td>{{item.cart_stock}}</td>
+				<td>{{item.exp_date}}</td>
+			</tr>
 			{% endfor %}
 		</tbody>
 	</table>
 	<br>
 	<br>
+	<h1>FIN</h1>
 </body>
 </html>
