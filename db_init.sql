@@ -4,7 +4,7 @@ CREATE DATABASE store;
 
 -- SET UP TABLE SCHEMAS
 CREATE TABLE inventory(
-	grp_id			 	INT,
+	grp_id			 	SERIAL,
 	shelved_stock		INT,
 	back_stock			INT,
 	cart_stock			INT,
@@ -13,7 +13,7 @@ CREATE TABLE inventory(
 );
 
 CREATE TABLE product(
-	grp_id			INT,
+	grp_id			SERIAL,
 	brand			VARCHAR(200),
 	name			VARCHAR(600),
 	lot_price		FLOAT(5),
@@ -23,14 +23,14 @@ CREATE TABLE product(
 );
 
 CREATE TABLE category(
-	cat_id			INT,
+	cat_id			SERIAL,
 	category		VARCHAR(50),
 	coefficient		FLOAT(5),
 	CONSTRAINT pk_cat PRIMARY KEY (cat_id)
 );
 
 CREATE TABLE price(
-	grp_id			INT,
+	grp_id			SERIAL,
 	price 			FLOAT(5),
 	start_date		TIMESTAMP,
 	end_date		TIMESTAMP,
@@ -39,14 +39,14 @@ CREATE TABLE price(
 );
 
 CREATE TABLE revenue(
-	rev_id			INT,
+	rev_id			SERIAL,
 	stamp			TIMESTAMP,
 	value			FLOAT(5),
 	CONSTRAINT pk_revenue PRIMARY KEY (rev_id)
 );
 
 CREATE TABLE cost(
-	cost_id			INT,
+	cost_id			SERIAL,
 	stamp			TIMESTAMP,
 	value 			FLOAT(5),
 	ctype			VARCHAR(30),
@@ -54,13 +54,13 @@ CREATE TABLE cost(
 );
 
 CREATE TABLE employee (
-	emp_id			INT,
+	emp_id			SERIAL,
 	role_id			INT,
 	CONSTRAINT pk_emp PRIMARY KEY (emp_id)
 );
 
 CREATE TABLE role(
-	role_id			INT,
+	role_id			SERIAL,
 	role 			VARCHAR(100),
 	hr_salary		FLOAT(5),
 	max_hrs			INT,
@@ -84,4 +84,6 @@ ALTER TABLE product ADD CONSTRAINT fk2_prod FOREIGN KEY (grp_id) REFERENCES pric
 ALTER TABLE product ADD CONSTRAINT fk3_prod FOREIGN KEY	(category) REFERENCES category(cat_id);
 ALTER TABLE price ADD CONSTRAINT fk1_price FOREIGN KEY (grp_id) REFERENCES product(grp_id);
 ALTER TABLE employee ADD CONSTRAINT fk_emp FOREIGN KEY (role_id) REFERENCES role(role_id);
+
+UPDATE inventory SET shelved_stock=400, back_stock=800;
 

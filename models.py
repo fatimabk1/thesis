@@ -62,7 +62,7 @@ class revenue(Base):
 	__tablename__   = "revenue"
 	
 	rev_id			= Column(Integer, primary_key=True)
-	stamp		= Column(DateTime)
+	stamp			= Column(DateTime)
 	value			= Column(Float)
 
 	def __repr__(self):

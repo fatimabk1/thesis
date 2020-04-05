@@ -7,17 +7,21 @@
 
 
 # -------------------------------------- RUN APPLICATION
-echo "Welcome to store simulator. 'run' runs the simulator and 'quit' exits"
+echo "Welcome to store simulator. 'r' runs the simulator and 'q' exits"
 echo -n "store-sim=# "
 read COMMAND
+LAST=$COMMAND
 
-while [ "$COMMAND" != "quit" ]; do
-	echo you entered: $COMMAND
-	if [ "$COMMAND" == "run" ];then
+while [ "$COMMAND" != "q" ]; do
+	if [ "$COMMAND" == "r" ] || [ "$COMMAND" == "^[[A" ];then
+		LAST=$COMMAND
 		pg_dump store > store.dump
 		python prog.py 
-		pg_restore -c -d store store_dump.tar
-	elif [ "$COMMAND" == "quit" ]; then
+		psql -c "DROP DATABASE store;"  --output='/dev/null'
+		psql -c "CREATE DATABASE store;"  --output='/dev/null'
+		psql store < store.dump --output='/dev/null'
+	elif [ "$COMMAND" == "q" ]; then
+		LAST=$COMMAND
 		break
 	fi 
 	echo -n "store-sim=# "
@@ -28,4 +32,5 @@ done
 # psql -c 'DROP DATABASE store;'
 # psql -c '\q'
 # compress/decompress store.dump later when we input large 
-# amounts of data: https://www.postgresql.org/docs/9.1/backup-dump.html
+# amounts of data: https://www.postgresql.org/docs/9.1/backup-dump.html		
+# psql -c '\q'pg_restore -C -d store store.dump

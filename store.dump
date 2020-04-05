@@ -34,6 +34,28 @@ CREATE TABLE public.category (
 ALTER TABLE public.category OWNER TO fatimakahbi;
 
 --
+-- Name: category_cat_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.category_cat_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.category_cat_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: category_cat_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.category_cat_id_seq OWNED BY public.category.cat_id;
+
+
+--
 -- Name: cost; Type: TABLE; Schema: public; Owner: fatimakahbi
 --
 
@@ -48,6 +70,28 @@ CREATE TABLE public.cost (
 ALTER TABLE public.cost OWNER TO fatimakahbi;
 
 --
+-- Name: cost_cost_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.cost_cost_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.cost_cost_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: cost_cost_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.cost_cost_id_seq OWNED BY public.cost.cost_id;
+
+
+--
 -- Name: employee; Type: TABLE; Schema: public; Owner: fatimakahbi
 --
 
@@ -58,6 +102,28 @@ CREATE TABLE public.employee (
 
 
 ALTER TABLE public.employee OWNER TO fatimakahbi;
+
+--
+-- Name: employee_emp_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.employee_emp_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.employee_emp_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: employee_emp_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.employee_emp_id_seq OWNED BY public.employee.emp_id;
+
 
 --
 -- Name: inventory; Type: TABLE; Schema: public; Owner: fatimakahbi
@@ -75,6 +141,28 @@ CREATE TABLE public.inventory (
 ALTER TABLE public.inventory OWNER TO fatimakahbi;
 
 --
+-- Name: inventory_grp_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.inventory_grp_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.inventory_grp_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: inventory_grp_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.inventory_grp_id_seq OWNED BY public.inventory.grp_id;
+
+
+--
 -- Name: price; Type: TABLE; Schema: public; Owner: fatimakahbi
 --
 
@@ -88,6 +176,28 @@ CREATE TABLE public.price (
 
 
 ALTER TABLE public.price OWNER TO fatimakahbi;
+
+--
+-- Name: price_grp_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.price_grp_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.price_grp_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: price_grp_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.price_grp_id_seq OWNED BY public.price.grp_id;
+
 
 --
 -- Name: product; Type: TABLE; Schema: public; Owner: fatimakahbi
@@ -106,6 +216,28 @@ CREATE TABLE public.product (
 ALTER TABLE public.product OWNER TO fatimakahbi;
 
 --
+-- Name: product_grp_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.product_grp_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.product_grp_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: product_grp_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.product_grp_id_seq OWNED BY public.product.grp_id;
+
+
+--
 -- Name: revenue; Type: TABLE; Schema: public; Owner: fatimakahbi
 --
 
@@ -117,6 +249,28 @@ CREATE TABLE public.revenue (
 
 
 ALTER TABLE public.revenue OWNER TO fatimakahbi;
+
+--
+-- Name: revenue_rev_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.revenue_rev_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.revenue_rev_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: revenue_rev_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.revenue_rev_id_seq OWNED BY public.revenue.rev_id;
+
 
 --
 -- Name: role; Type: TABLE; Schema: public; Owner: fatimakahbi
@@ -131,6 +285,84 @@ CREATE TABLE public.role (
 
 
 ALTER TABLE public.role OWNER TO fatimakahbi;
+
+--
+-- Name: role_role_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.role_role_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.role_role_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: role_role_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.role_role_id_seq OWNED BY public.role.role_id;
+
+
+--
+-- Name: category cat_id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.category ALTER COLUMN cat_id SET DEFAULT nextval('public.category_cat_id_seq'::regclass);
+
+
+--
+-- Name: cost cost_id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.cost ALTER COLUMN cost_id SET DEFAULT nextval('public.cost_cost_id_seq'::regclass);
+
+
+--
+-- Name: employee emp_id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_id SET DEFAULT nextval('public.employee_emp_id_seq'::regclass);
+
+
+--
+-- Name: inventory grp_id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.inventory ALTER COLUMN grp_id SET DEFAULT nextval('public.inventory_grp_id_seq'::regclass);
+
+
+--
+-- Name: price grp_id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.price ALTER COLUMN grp_id SET DEFAULT nextval('public.price_grp_id_seq'::regclass);
+
+
+--
+-- Name: product grp_id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.product ALTER COLUMN grp_id SET DEFAULT nextval('public.product_grp_id_seq'::regclass);
+
+
+--
+-- Name: revenue rev_id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.revenue ALTER COLUMN rev_id SET DEFAULT nextval('public.revenue_rev_id_seq'::regclass);
+
+
+--
+-- Name: role role_id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.role ALTER COLUMN role_id SET DEFAULT nextval('public.role_role_id_seq'::regclass);
+
 
 --
 -- Data for Name: category; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
@@ -205,26 +437,26 @@ COPY public.employee (emp_id, role_id) FROM stdin;
 --
 
 COPY public.inventory (grp_id, shelved_stock, back_stock, cart_stock, exp_date) FROM stdin;
-1	50	100	0	2019-09-30 03:20:33
-2	50	100	0	2019-09-30 03:20:33
-3	50	100	0	2019-09-30 03:20:33
-4	50	100	0	2019-09-30 03:20:33
-5	50	100	0	2019-09-30 03:20:33
-6	50	100	0	2019-09-30 03:20:33
-7	50	100	0	2019-09-30 03:20:33
-8	50	100	0	2019-09-30 03:20:33
-9	50	100	0	2019-09-30 03:20:33
-10	50	100	0	2019-09-30 03:20:33
-11	50	100	0	2019-09-30 03:20:33
-12	50	100	0	2019-09-30 03:20:33
-13	50	100	0	2019-09-30 03:20:33
-14	50	100	0	2019-09-30 03:20:33
-15	50	100	0	2019-09-30 03:20:33
-16	50	100	0	2019-09-30 03:20:33
-17	50	100	0	2019-09-30 03:20:33
-18	50	100	0	2019-09-30 03:20:33
-19	50	100	0	2019-09-30 03:20:33
-20	50	100	0	2019-09-30 03:20:33
+1	400	800	0	2019-09-30 03:20:33
+2	400	800	0	2019-09-30 03:20:33
+3	400	800	0	2019-09-30 03:20:33
+4	400	800	0	2019-09-30 03:20:33
+5	400	800	0	2019-09-30 03:20:33
+6	400	800	0	2019-09-30 03:20:33
+7	400	800	0	2019-09-30 03:20:33
+8	400	800	0	2019-09-30 03:20:33
+9	400	800	0	2019-09-30 03:20:33
+10	400	800	0	2019-09-30 03:20:33
+11	400	800	0	2019-09-30 03:20:33
+12	400	800	0	2019-09-30 03:20:33
+13	400	800	0	2019-09-30 03:20:33
+14	400	800	0	2019-09-30 03:20:33
+15	400	800	0	2019-09-30 03:20:33
+16	400	800	0	2019-09-30 03:20:33
+17	400	800	0	2019-09-30 03:20:33
+18	400	800	0	2019-09-30 03:20:33
+19	400	800	0	2019-09-30 03:20:33
+20	400	800	0	2019-09-30 03:20:33
 \.
 
 
@@ -305,6 +537,62 @@ COPY public.role (role_id, role, hr_salary, max_hrs) FROM stdin;
 6	stocker_young	10.5	20
 7	cashier_young	8.5	20
 \.
+
+
+--
+-- Name: category_cat_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.category_cat_id_seq', 1, false);
+
+
+--
+-- Name: cost_cost_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.cost_cost_id_seq', 1, false);
+
+
+--
+-- Name: employee_emp_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.employee_emp_id_seq', 1, false);
+
+
+--
+-- Name: inventory_grp_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.inventory_grp_id_seq', 1, false);
+
+
+--
+-- Name: price_grp_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.price_grp_id_seq', 1, false);
+
+
+--
+-- Name: product_grp_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.product_grp_id_seq', 1, false);
+
+
+--
+-- Name: revenue_rev_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.revenue_rev_id_seq', 1, false);
+
+
+--
+-- Name: role_role_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.role_role_id_seq', 1, false);
 
 
 --
