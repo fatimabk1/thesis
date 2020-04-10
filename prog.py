@@ -26,32 +26,41 @@ if __name__ == "__main__":
 	session = Session()
 	sim = Simulator()
 
-	if DEBUG is True:
-		inventoryStats(session)
 
-	for i in range(200):
-		print("-------------------------------------------------------------------- MINUTE ", i)
-		sim.advance()
-		if DEBUG is True:
-			print("SHOPPERS ---- ")
-			sim.shoppers.sort(key=lambda x: x.status.value, reverse=True)
-			for shopper in sim.shoppers:
-				if shopper.status == Status.SHOPPING or shopper.status == Status.QUEUEING or shopper.status == Status.CHECKOUT or shopper.status == Status.DONE:
-					s = "<shopper %d: "%(shopper.id) + str(shopper.status) + "> --- %d items / %d planned" %(len(shopper.cart), shopper.count) 
-					if shopper.status == Status.QUEUEING or shopper.status == Status.CHECKOUT:
-						if shopper.queue is not None:
-							s += " --- Lane %d" % (shopper.queue)
-					s += ">"
-					print(s)
-			sim.shoppers.sort(key=lambda x: x.id, reverse=True)
-			sim.lanes.__repr__()
-			time.sleep(2)
+	sim.run()
 
-	print("\n\n\n---------------SIMULATION COMPLETE------------------")
-	if DEBUG is True:
-		inventoryStats(session)
-		shopperStats(sim)
-	endSession(session)
-	print(".\n.\n.\n.\n.\n.\nresetting")
+
+
+
+
+	# if DEBUG is True:
+	# 	inventoryStats(session)
+
+	# for i in range(200):
+	# 	print("-------------------------------------------------------------------- MINUTE ", i)
+	# 	sim.advance()
+	# 	if DEBUG is True:
+
+		# def debug():
+		# 	print("SHOPPERS ---- ")
+		# 	sim.shoppers.sort(key=lambda x: x.status.value, reverse=True)
+		# 	for shopper in sim.shoppers:
+		# 		if shopper.status == Status.SHOPPING or shopper.status == Status.QUEUEING or shopper.status == Status.CHECKOUT or shopper.status == Status.DONE:
+		# 			s = "<shopper %d: "%(shopper.id) + str(shopper.status) + "> --- %d items / %d planned" %(len(shopper.cart), shopper.count) 
+		# 			if shopper.status == Status.QUEUEING or shopper.status == Status.CHECKOUT:
+		# 				if shopper.queue is not None:
+		# 					s += " --- Lane %d" % (shopper.queue)
+		# 			s += ">"
+		# 			print(s)
+		# 	sim.shoppers.sort(key=lambda x: x.id, reverse=True)
+		# 	sim.lanes.__repr__()
+		# 	time.sleep(2)
+
+	# print("\n\n\n---------------SIMULATION COMPLETE------------------")
+	# if DEBUG is True:
+	# 	inventoryStats(session)
+	# 	shopperStats(sim)
+	# endSession(session)
+	# print(".\n.\n.\n.\n.\n.\nresetting")
 
 

@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 from sqlalchemy.sql.expression import func
 from collections import deque
+import time
+
 
 def endSession(session):
 	try:
@@ -27,9 +29,9 @@ SATURDAY = 7
 class Status(Enum):   
 	INERT 		= 0		# has not started the shopping process yet
 	SHOPPING 	= 1		# is shopping
-	QUEUEING 	= 2		# has finished shopping (yet to join a lane or in a lane)
+	QUEUEING 	= 2		# has finished shopping (yet to join a lane || waiting in a lane)
 	CHECKOUT 	= 3		# lane is in the process of checking out this shopper's cart
-	DONE 		= 4		# this shopper has completed the checkout process
+	DONE 		= 4		# this shopper has completed the checkout process, has no further processes
 
 NUM_DAYS = 7	 # 7 days in a week
 DAY_START = 10	 # store opens at 10:00 am
@@ -38,6 +40,15 @@ session = Session()
 PRODUCT_COUNT  = session.query(product.grp_id).count()   # total # of products in db
 CATEGORY_COUNT = session.query(category.cat_id).count()  # total # of categories in db
 endSession(session)
+
+# ------------------------------------------------------------------------------------------------ PARAMATERS
+CHECKOUT_MIN	= 5
+CHECKOUT_MAX	= 10
+NUM_LANES		= 5
+RUN_TIME		= 30
+SHOPPER_MIN		= 10	# number of items a shopper will attempt to purchase
+SHOPPER_MAX		= 50	
+
 
 # ------------------------------------------------------------------------------------------------ CLASSES
 
@@ -54,12 +65,17 @@ class Auto_ID:
 		return self.val
 
 # simulates the store for a number of months and days
-class Period_Simulator(sim, months, days):
-	def __init__(self):
-		self.simulator = sim
+# handles restocking, inventory ordering, price/sale updates, removing expired products
+# outputs aggregate stats to data visualizor application
+# class Period_Simulator(sim, months, days):
+# 	def __init__(self):
+# 		self.simulator = sim
 
 
-# store simulator that advances shoppers and lanes by one minute
+
+# simulates the store for a single day
+# advances shoppers and lanes one minute at a time
+# allows shoppers to finish shopping after store closes but doesn't introduce new shoppers 
 class Simulator:
 	def __init__(self):
 		self.clock 				= datetime(2019, 12, 12, 10, 0)
@@ -80,25 +96,56 @@ class Simulator:
 				[51, 63, 69, 70, 67, 66, 68, 72, 73,  66, 51, 33, 17]
 		]
 
+	# store simulation for a single day, continues until all shoppers in the store complete their trips
+	def run(self):
+
+		def debug(i):
+			print("-------------------------------------------------------------------- MINUTE ", i)
+			print("SHOPPERS ---- ")
+			self.shoppers.sort(key=lambda x: x.status.value, reverse=True)
+			for shopper in self.shoppers:
+				if shopper.status != Status.INERT and shopper.status != Status.DONE:
+					s = "<shopper %d: "%(shopper.id) + str(shopper.status) 
+					if shopper.queue_time is not None:
+						s+= "__%d"%(shopper.queue_time)
+					s += "> --- %d items / %d planned" %(len(shopper.cart), shopper.count) 
+					if shopper.status == Status.QUEUEING or shopper.status == Status.CHECKOUT:
+						if shopper.queue is not None:
+							s += " --- Lane %d" % (shopper.queue)
+					s += ">"
+					print(s)
+			self.shoppers.sort(key=lambda x: x.id, reverse=True)
+			self.lanes.__repr__()
+			# time.sleep(0.5)
+		
+		for i in range(RUN_TIME):
+
+			# assign a new set of shoppers at the start of each hour until the store closes
+			if self.clock.minute == 0:
+				# display prev hr stats
+				day_freq = self.shopper_frequency[self.day]
+				freq = day_freq[self.clock.hour-DAY_START]
+				self.hour_shopper_count = int(((self.avg_shoppers + random.randint(-400,400))/sum(day_freq))*freq)
+
+				for x in range(self.hour_shopper_count):
+					self.shoppers.append(Shopper(self.id_generator))
+
+			self.advance()
+			debug(i)
+
+		i = 1
+		while any((shopper.status is not Status.DONE and shopper.status is not Status.INERT) for shopper in self.shoppers):
+			self.advance()
+			debug(RUN_TIME + i)
+			i+=1
+
 	# advance simulation by one hour
 	def advance(self):
-
-		# update shoppers/hr at the start of each hour
-		if self.clock.minute == 0:
-			# display prev hr stats
-			day_freq = self.shopper_frequency[self.day]
-			freq = day_freq[self.clock.hour-DAY_START]
-			self.hour_shopper_count = int(((self.avg_shoppers + random.randint(-400,400))/sum(day_freq))*freq)
-
-			for x in range(self.hour_shopper_count):
-				self.shoppers.append(Shopper(self.id_generator))
-
-		### CHECK THIS LOGIC
 		# advance shopper simulations by one minute
 		for index, shopper in enumerate(self.shoppers):
 			if shopper.status is Status.QUEUEING:
 				if shopper.queue is None:
-					self.lanes.push(shopper)
+					self.lanes.push(shopper)				
 			elif shopper.status is Status.INERT or Status.SHOPPING:
 				shopper.advance(self.clock)
 			elif shopper.status is Status.CHECKOUT or shopper.status is Status.DONE:
@@ -106,8 +153,6 @@ class Simulator:
 
 		# update lane simulations by one minute
 		self.lanes.advance(self.clock)
-
-		# update clock
 		self.clock += timedelta(minutes=1)
 
 class Shopper:
@@ -116,9 +161,7 @@ class Shopper:
 		self.browse 		= None
 		self.cart 			= []
 		self.cart_size  	= None
-		### RETURN TO NORM
-		self.count 			= random.randint(10,50)
-		# self.count 			= random.randint(1,200)
+		self.count 			= random.randint(SHOPPER_MIN,SHOPPER_MAX)	
 		self.id 			= Auto_ID.generate()
 		self.queue  		= None
 		self.queue_time 	= None
@@ -240,17 +283,29 @@ class Shopper:
 		
 		print(s)
 
+# a single lane contains: a queue and max # of items checked out per minute
+class SingleLane:
+	def __init__(self):
+		self.queue = deque()
+		self.items_per_min = None
+
+	def reset(self):
+		self.items_per_min = random.randint(CHECKOUT_MIN, CHECKOUT_MAX)
+
+# a list of lane objects, advances lanes by one time step
 class Lane:
 	def __init__(self):
-		self.lanes = []
-		for i in range(20):
-			self.lanes.append(deque())
+		self.lanes			= []
+		for i in range(NUM_LANES):
+			L = SingleLane()
+			L.reset()
+			self.lanes.append(L)
 
 	# return index of shortest lane
 	def shortest(self):
 		min_index, min_count = None, None
-		for i, q in enumerate(self.lanes):
-			index, count = i, len(q)
+		for i, lane_object in enumerate(self.lanes):
+			index, count = i, len(lane_object.queue)
 			if min_index is None or count < min_count:
 				min_index, min_count = index, count
 			if min_count is 0:
@@ -262,32 +317,36 @@ class Lane:
 	def push(self, shopper):
 		index = self.shortest()
 		shopper.queue = index
-		self.lanes[index].append(shopper)
+		self.lanes[index].queue.append(shopper)
 		shopper.queue_time = 0
-		print("*** PUSHED shopper %d w/ %d items into lane %d" % (shopper.id, len(shopper.cart),index))
+		print("*** PUSHED shopper %d w/ %d items into lane %d" % (shopper.id, len(shopper.cart), index))
 
-	# pop shopper from queue l
-	def pop(self, l):
-		self.lanes[l].popleft() 
-		print("*** POPPED shopper %d from lane %d" % (shopper.id, l))  
+	# pop shopper from queue index
+	def pop(self, index):
+		self.lanes[index].queue.popleft() 
+		print("*** POPPED shopper %d from lane %d" % (shopper.id, index))  
 
 	# checkout up to x items in in a single cart within a single lane. 
 	# if less than x items are checked out, returns the difference
 	def checkout_cart(self, x, lane, clock):
-		assert len(lane) != 0    # precondition: lane must have shoppers to checkout
+		assert len(lane) != 0    # precondition: lane must have shoppers to checkout, should not call checkout_cart() if False
 
-		shopper = lane.popleft()
-		shopper.status = Status.CHECKOUT
-		cart 	= shopper.cart
-		session = Session()
+		shopper 		= lane.popleft()
+		shopper.status 	= Status.CHECKOUT
+		cart 			= shopper.cart
+		session 		= Session()
+
 		print("\t*** CHECKING OUT <shopper %d> with %d items " % (shopper.id, len(cart)))
+
 		while (x != 0 and len(cart) != 0):
+
 			# lookup item price
 			item = cart.pop(0)
 			price = session.execute(
 					"SELECT price FROM price WHERE grp_id=:id;",
 					{"id": item}
 				).first()[0]
+
 			# reduce item inventory
 			r = session.execute(
 				"UPDATE inventory SET cart_stock=cart_stock-1 WHERE grp_id=:id;",
@@ -315,28 +374,29 @@ class Lane:
 
 	# for each lane, checkout up to x items 
 	def advance(self, clock):
-		### RETURN TO NORMAL
-		x = random.randint(4, 12)
-		# x = random.randint(18, 25)
-		for lane in self.lanes:
-			while( x!=0 and len(lane)>0):
-				x = self.checkout_cart(x, lane, clock)
+		for lane_obj in self.lanes:
+			lane, x = lane_obj.queue, lane_obj.items_per_min
 
-		# update queue time for waiting shoppers
+			if len(lane) > 0:
+				while x!=0:
+					if len(lane) == 0:
+						break
+					x = self.checkout_cart(x, lane, clock)
+				lane_obj.reset()
+
+			# update queue time for waiting shoppers
 			for index, shopper in enumerate(lane):
 				if shopper.status is Status.QUEUEING:
 					shopper.queue_time += 1				
 
 	def __repr__(self):
-		for index, l in enumerate(self.lanes):
-			s = "<LANE %d: %d shoppers " % (index, len(l))
-			if len(l) != 0:
-				s = s + "--- ["
-				for shopper in l:
+		for index, lane_obj in enumerate(self.lanes):
+			if len(lane_obj.queue) != 0:
+				s = "<LANE %d: %d shoppers --- [" % (index, len(lane_obj.queue))
+				for shopper in lane_obj.queue:
 					s+="shopper %d, " %(shopper.id)
-				s+= "]"
-			s+= ">"
-			print(s)
+				s+= "]>"
+				print(s)
 
 # class Stats:
 
