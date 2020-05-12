@@ -11,6 +11,7 @@ In terminal, run:
 * pip install requirements.txt
 * psql
 * \i db_init.sql
+* \q
 * ./simulate.sh
 
 

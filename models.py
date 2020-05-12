@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey, String, Float, DateTime
+from sqlalchemy import Column, Integer, ForeignKey, String, Float, DateTime, Interval
 from sqlalchemy.orm import relationship
 from base import Session, Engine, Base
 
@@ -104,5 +104,27 @@ class role(Base):
 	def __repr__(self):
 		return "<Role(id='{}', role='{}', wage={}, max_hrs={})>"\
 			.format(self.role_id, self.role, self.hr_salary, self.max_hrs)
+
+class queuetime(Base):
+	__tablename__   = "queuetime"
+	
+	qt_id			= Column(Integer, primary_key=True)
+	queue_num		= Column(Integer)
+	stamp			= Column(DateTime)
+	q_time			= Column(Integer)
+	total_qs		= Column(Integer)
+
+	def __repr__(self):
+		return "<queueTtme(id='{}', queue_num='{}', stamp ='{}', q_time='{}', total_qs='{}')>"\
+			.format(self.qt_id, self.queue_num, self.stamp, self.q_time, self.total_qs)
+
+
+
+
+
+
+
+
+
 
 

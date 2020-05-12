@@ -238,6 +238,43 @@ ALTER SEQUENCE public.product_grp_id_seq OWNED BY public.product.grp_id;
 
 
 --
+-- Name: queuetime; Type: TABLE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE TABLE public.queuetime (
+    qt_id integer NOT NULL,
+    queue_num integer,
+    stamp timestamp without time zone,
+    q_time integer,
+    total_qs integer
+);
+
+
+ALTER TABLE public.queuetime OWNER TO fatimakahbi;
+
+--
+-- Name: queuetime_qt_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.queuetime_qt_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.queuetime_qt_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: queuetime_qt_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.queuetime_qt_id_seq OWNED BY public.queuetime.qt_id;
+
+
+--
 -- Name: revenue; Type: TABLE; Schema: public; Owner: fatimakahbi
 --
 
@@ -348,6 +385,13 @@ ALTER TABLE ONLY public.price ALTER COLUMN grp_id SET DEFAULT nextval('public.pr
 --
 
 ALTER TABLE ONLY public.product ALTER COLUMN grp_id SET DEFAULT nextval('public.product_grp_id_seq'::regclass);
+
+
+--
+-- Name: queuetime qt_id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.queuetime ALTER COLUMN qt_id SET DEFAULT nextval('public.queuetime_qt_id_seq'::regclass);
 
 
 --
@@ -517,6 +561,14 @@ COPY public.product (grp_id, brand, name, lot_price, lot_size, category) FROM st
 
 
 --
+-- Data for Name: queuetime; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
+--
+
+COPY public.queuetime (qt_id, queue_num, stamp, q_time, total_qs) FROM stdin;
+\.
+
+
+--
 -- Data for Name: revenue; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
 --
 
@@ -582,6 +634,13 @@ SELECT pg_catalog.setval('public.product_grp_id_seq', 1, false);
 
 
 --
+-- Name: queuetime_qt_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.queuetime_qt_id_seq', 1, false);
+
+
+--
 -- Name: revenue_rev_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
 --
 
@@ -641,6 +700,14 @@ ALTER TABLE ONLY public.price
 
 ALTER TABLE ONLY public.product
     ADD CONSTRAINT pk_prod PRIMARY KEY (grp_id);
+
+
+--
+-- Name: queuetime pk_qtime; Type: CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.queuetime
+    ADD CONSTRAINT pk_qtime PRIMARY KEY (qt_id);
 
 
 --

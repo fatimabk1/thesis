@@ -7,13 +7,13 @@
 
 
 # -------------------------------------- RUN APPLICATION
-echo "Welcome to store simulator. 'r' runs the simulator and 'q' exits"
+echo "Welcome to store simulator. 'r' runs the simulator, 'q' exits and 't' rebuilds the database"
 echo -n "store-sim=# "
 read COMMAND
 LAST=$COMMAND
 
 while [ "$COMMAND" != "q" ]; do
-	if [ "$COMMAND" == "r" ] || [ "$COMMAND" == "^[[A" ];then
+	if [ "$COMMAND" == "r" ];then
 		LAST=$COMMAND
 		pg_dump store > store.dump
 		python prog.py 
@@ -23,6 +23,10 @@ while [ "$COMMAND" != "q" ]; do
 	elif [ "$COMMAND" == "q" ]; then
 		LAST=$COMMAND
 		break
+	elif [ "$COMMAND" == "t" ]; then
+		psql -c "DROP DATABASE store;"  --output='/dev/null'
+		psql -c "\i db_init.sql"
+		echo "database rebuilt"
 	fi 
 	echo -n "store-sim=# "
 	read COMMAND

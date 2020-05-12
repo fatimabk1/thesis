@@ -67,6 +67,15 @@ CREATE TABLE role(
 	CONSTRAINT pk_role PRIMARY KEY (role_id)
 );
 
+CREATE TABLE queuetime(
+	qt_id			SERIAL,
+	queue_num		INTEGER,
+	stamp			TIMESTAMP,
+	q_time			INTEGER,
+	total_qs		Integer,
+	CONSTRAINT	pk_qtime PRIMARY KEY (qt_id)
+);
+
 
 -- INSERT STARTER DATA INTO TABLES FROM EXCEL SHEETS
 \copy inventory FROM 'test-data/inventory.csv' 	WITH DELIMITER ',' CSV HEADER;

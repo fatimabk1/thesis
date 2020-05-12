@@ -1,11 +1,12 @@
 from base import Engine, Session, Base
-from models import inventory, product, category, price, revenue, cost, employee, role
+from models import inventory, product, category, price, revenue, cost, employee, role, queuetime
 import random
 from datetime import datetime, timedelta
 from enum import Enum
 from sqlalchemy.sql.expression import func
 from collections import deque
 import time
+import sys
 
 
 def endSession(session):
@@ -41,13 +42,21 @@ PRODUCT_COUNT  = session.query(product.grp_id).count()   # total # of products i
 CATEGORY_COUNT = session.query(category.cat_id).count()  # total # of categories in db
 endSession(session)
 
+
+MANAGE_FREQUENCY	= 1			# manage() evaluates average lane qtime and qlen every MANAGE_FREQUENCY minutes
+QTIME_CONSTANT		= 15		# average queue time is calculated over the last QTIME_CONSTANT minutes
+IDEAL_QTIME			= 6			# the ideal amount of time a consumer is willing to wait in line (close to max, but not quite), in minutes
+QTIME_MIN 			= 4			# if the avg qtime is less than this value, need to close some lanes
+QTIME_MAX 			= 8			# if the avg qtime is greater than this value, need to open more lanes
+
 # ------------------------------------------------------------------------------------------------ PARAMATERS
-CHECKOUT_MIN	= 5
-CHECKOUT_MAX	= 10
-NUM_LANES		= 5
-RUN_TIME		= 30
-SHOPPER_MIN		= 10	# number of items a shopper will attempt to purchase
-SHOPPER_MAX		= 50	
+CHECKOUT_MIN	= 2		# min num of items a lane can checkout per min
+CHECKOUT_MAX	= 5		# max num of items a lane can checkout per min
+MAX_LANES		= 20	# max possible lanes 
+NUM_LANES 		= 5		# num of open lanes at start
+RUN_TIME		= 60	# minutes to run simulation
+SHOPPER_MIN		= 10	# min number of items a shopper will attempt to purchase
+SHOPPER_MAX		= 50	# max number of items a shopper will attempt to purchase
 
 
 # ------------------------------------------------------------------------------------------------ CLASSES
@@ -79,11 +88,13 @@ class Auto_ID:
 class Simulator:
 	def __init__(self):
 		self.clock 				= datetime(2019, 12, 12, 10, 0)
+		self.start 				= datetime(2019, 12, 12, 10, 0)	# the exact time the day simulator starts, used to monitor time elapsed
 		self.day 				= SUNDAY
 		self.avg_shoppers		= 2200
 		self.shoppers 			= []
 		self.lanes				= Lane()
 		self.id_generator		= Auto_ID()
+		self.manage_delay		= None
 
 		# Percentage busyness per hour per day --> Day[hr-10] = % busyness 
 		self.shopper_frequency 	= [
@@ -96,33 +107,22 @@ class Simulator:
 				[51, 63, 69, 70, 67, 66, 68, 72, 73,  66, 51, 33, 17]
 		]
 
+	
+
 	# store simulation for a single day, continues until all shoppers in the store complete their trips
 	def run(self):
+		def minutes_elapsed():
+			return int((self.clock - self.start).seconds / 60)
 
 		def debug(i):
-			print("-------------------------------------------------------------------- MINUTE ", i)
-			print("SHOPPERS ---- ")
-			self.shoppers.sort(key=lambda x: x.status.value, reverse=True)
-			for shopper in self.shoppers:
-				if shopper.status != Status.INERT and shopper.status != Status.DONE:
-					s = "<shopper %d: "%(shopper.id) + str(shopper.status) 
-					if shopper.queue_time is not None:
-						s+= "__%d"%(shopper.queue_time)
-					s += "> --- %d items / %d planned" %(len(shopper.cart), shopper.count) 
-					if shopper.status == Status.QUEUEING or shopper.status == Status.CHECKOUT:
-						if shopper.queue is not None:
-							s += " --- Lane %d" % (shopper.queue)
-					s += ">"
-					print(s)
-			self.shoppers.sort(key=lambda x: x.id, reverse=True)
+			print("-------------------------------------------------------------------- MINUTE ", minutes_elapsed(), " | ", self.clock.minute)
 			self.lanes.__repr__()
-			# time.sleep(0.5)
 		
+		# simulator during official store hours
 		for i in range(RUN_TIME):
-
 			# assign a new set of shoppers at the start of each hour until the store closes
 			if self.clock.minute == 0:
-				# display prev hr stats
+				print("ADDING NEW SHOPPERS\n\n")
 				day_freq = self.shopper_frequency[self.day]
 				freq = day_freq[self.clock.hour-DAY_START]
 				self.hour_shopper_count = int(((self.avg_shoppers + random.randint(-400,400))/sum(day_freq))*freq)
@@ -130,14 +130,22 @@ class Simulator:
 				for x in range(self.hour_shopper_count):
 					self.shoppers.append(Shopper(self.id_generator))
 
-			self.advance()
-			debug(i)
+			#### START: figure out where to put manage() - in lanes or in sim? rn moved all to lanes, but need sim vars for manage_delay, elapsed_mins
+			### NEXT: test manage() w/ QTIME_CONSTANT delay after activation
+			### NEXT: make clock into global var / singleton class
 
-		i = 1
-		while any((shopper.status is not Status.DONE and shopper.status is not Status.INERT) for shopper in self.shoppers):
+			# mangage lane queues 
+			self.lanes.manage(self.clock)
 			self.advance()
-			debug(RUN_TIME + i)
-			i+=1
+			debug(self.clock.minute)
+			self.clock += timedelta(minutes=1)
+
+		# simulator after store close for lingering shoppers
+		while any((shopper.status is not Status.DONE and shopper.status is not Status.INERT) for shopper in self.shoppers):
+			self.lanes.manage(self.clock)
+			self.advance()
+			debug(self.clock.minute)
+			self.clock += timedelta(minutes=1)
 
 	# advance simulation by one hour
 	def advance(self):
@@ -153,8 +161,7 @@ class Simulator:
 
 		# update lane simulations by one minute
 		self.lanes.advance(self.clock)
-		self.clock += timedelta(minutes=1)
-
+		
 class Shopper:
 	def __init__(self, Auto_ID):
 		self.begin 			= random.randint(0,60)
@@ -167,6 +174,11 @@ class Shopper:
 		self.queue_time 	= None
 		self.status 		= Status.INERT
 		self.total			= 0.0
+
+
+	def publishQueueTime(self, clock, total_qs):
+		qt1 = queuetime(queue_num=self.queue, stamp=clock, q_time=self.queue_time, total_qs=total_qs)
+		qt1.save()
 
 	def addToCart(self, item):
 		session = Session()
@@ -287,19 +299,25 @@ class Shopper:
 class SingleLane:
 	def __init__(self):
 		self.queue = deque()
-		self.items_per_min = None
+		self.items_per_min = None		
+		## ADD: property for assigned employee
 
-	def reset(self):
-		self.items_per_min = random.randint(CHECKOUT_MIN, CHECKOUT_MAX)
+	def reset(self):					
+		## CHANGE:  this should be based on the assigned employee's checkout speed
+		self.items_per_min = random.randint(CHECKOUT_MIN, CHECKOUT_MAX)		
 
 # a list of lane objects, advances lanes by one time step
 class Lane:
 	def __init__(self):
 		self.lanes			= []
+		self.num_lanes 		= 0
+		self.max 			= MAX_LANES
+
 		for i in range(NUM_LANES):
 			L = SingleLane()
 			L.reset()
 			self.lanes.append(L)
+			self.num_lanes += 1
 
 	# return index of shortest lane
 	def shortest(self):
@@ -325,6 +343,122 @@ class Lane:
 	def pop(self, index):
 		self.lanes[index].queue.popleft() 
 		print("*** POPPED shopper %d from lane %d" % (shopper.id, index))  
+
+	# calculates and returns the current average queue length
+	def avg_qlen(self):
+		length = 0
+		for queue_obj in self.lanes:
+			length += len(queue_obj.queue)
+		return round(length / self.num_lanes)
+
+	# caclculates and returns the average queue time over the past QTIME_CONSTANT minutes
+	def avg_qtime(self, clock):
+		qtime, results = 0, 0
+		time = clock - timedelta(minutes=QTIME_CONSTANT)
+		avg_qtime = session.execute(
+			"SELECT AVG(q_time) FROM queuetime WHERE stamp>=:time",
+			{"time": time}
+		).first()[0]
+
+		if avg_qtime is None:
+			return 0
+		else:
+			return round(avg_qtime)
+	
+	# open more lanes and redistribute customers to these lanes
+	def expand(self, avg_qlen, avg_qtime):
+
+		# preliminary calculations
+		wait_per_person = avg_qtime / (avg_qlen -1)
+		ideal_qlen = round(IDEAL_QTIME / wait_per_person)
+		delta_qlen = avg_qlen - ideal_qlen
+		excess_ppl = delta_qlen * self.num_lanes
+		num_new_lanes = round(excess_ppl / ideal_qlen)
+
+		print("EXPAND STATS: wait_per_person=%d, ideal_qlen=%d, delta_qlen=%d, excess_ppl=%d, num_new_lanes=%d" \
+			% (wait_per_person, ideal_qlen, delta_qlen, excess_ppl, num_new_lanes))
+
+		# append new lanes
+		qcount_old = self.num_lanes
+		for i in range(num_new_lanes):
+			L = SingleLane()
+			L.reset()				## CHANGE: employee assignment should determine checkout speed
+			self.lanes.append(L)
+			self.num_lanes += 1
+
+		# redistribute customers
+		new_lane_index = qcount_old
+		old_lane_index = 0;
+
+		for i in range(qcount_old):
+			q = self.lanes[i].queue
+
+			if len(q) == 1: 
+				continue
+
+			# redistribute to new lanes while they have space
+			while len(q)>ideal_qlen and new_lane_index<self.num_lanes:
+				shopper = q.pop()
+				laneq = self.lanes[new_lane_index].queue 
+				laneq.append(shopper)
+				if(len(laneq) >= ideal_qlen):
+					new_lane_index +=1
+
+			# redistribute remaining customers to all lanes one-by-one
+			while len(q)> ideal_qlen:
+				if i == old_lane_index:
+					old_lane_index+=1
+					break
+				shopper = q.pop()
+				laneq = self.lanes[old_lane_index].queue 
+				laneq.append(shopper)
+				old_lane_index+=1
+
+			print("\n")
+			self.__repr__()
+
+				
+	# close  lanes and redistribute customers to open lanes
+	def collapse(self, qlen, qtime):
+		###  NEXT: write collapse()
+		pass
+		# append x more lanes
+
+		# assign employee to lane
+
+		# redistribute customers
+
+	# closes or opens lanes for optomized productivity (lower wait times and labor costs). Called periodically by day sim.
+	def manage(self, clock, manage_delay):				## CHANGE: clock will become a global variable. maybe a singleton class? 
+		if clock.hour==10 and clock.minute<10:
+			return
+
+		if self.manage_delay is None:
+			qlen = self.avg_qlen()
+			qtime = self.avg_qtime(clock)
+			result = False
+
+			if qtime<QTIME_MIN:
+				# self.collapse(qlen, qtime)
+				print("\t\t.................................................................... collapse()")
+				result = True
+			elif qtime>QTIME_MAX and qlen>1:
+				self.expand(qlen, qtime)
+				print("\t\t.................................................................... expand()")
+				result = True
+			else:
+				print("\t\t.................................................................... ideal :)")
+
+			if result is True:
+				self.manage_delay = 0
+
+		else :
+			self.manage_delay += 1
+			if self.manage_delay == QTIME_CONSTANT:
+				self.manage_delay = None
+
+		return
+		
 
 	# checkout up to x items in in a single cart within a single lane. 
 	# if less than x items are checked out, returns the difference
@@ -360,10 +494,19 @@ class Lane:
 		if len(cart) == 0:
 			# add total to revenue table
 			print("\t*** TOTAL = $%d" % (shopper.total))
-			session.execute(
-				"INSERT INTO revenue (stamp, value) VALUES (:stamp, :value)",
-				{"stamp": clock, "value": shopper.total}
-			)
+
+			# session.execute(
+			# 	"INSERT INTO revenue (stamp, value) VALUES (:stamp, :value)",
+			# 	{"stamp": clock, "value": shopper.total}
+			# )
+
+			# publish revenue to db
+			rev = revenue(stamp=clock, value=shopper.total)
+			session.add(rev)
+
+			# publish shopper's queue time to db
+			qt = queuetime(queue_num=shopper.queue, stamp=clock, q_time=shopper.queue_time, total_qs=self.num_lanes)
+			session.add(qt)
 			shopper.status = Status.DONE
 		else:
 			# cart still has items, put back
@@ -391,12 +534,13 @@ class Lane:
 
 	def __repr__(self):
 		for index, lane_obj in enumerate(self.lanes):
+			assert lane_obj is not None
+			s = "<LANE %d: %d shoppers --- [" % (index, len(lane_obj.queue))
 			if len(lane_obj.queue) != 0:
-				s = "<LANE %d: %d shoppers --- [" % (index, len(lane_obj.queue))
 				for shopper in lane_obj.queue:
-					s+="shopper %d, " %(shopper.id)
-				s+= "]>"
-				print(s)
+					s+="s%d, " %(shopper.id)
+			s+= "]>"
+			print(s)
 
 # class Stats:
 
