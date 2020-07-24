@@ -29,12 +29,12 @@ if __name__ == "__main__":
 
 	sim.run()
 	inventoryStats(session)
-	rows = session.execute("SELECT q_time FROM queuetime WHERE stamp>='2019-12-12 11:00' AND stamp<='2019-12-12 11:30';")
-	for r in rows:
-		print(r.__repr__())
-	rows = session.execute("SELECT AVG(q_time) FROM queuetime WHERE stamp>='2019-12-12 11:00' AND stamp<='2019-12-12 11:30';")
-	for r in rows:
-		print(r.__repr__())
+	# rows = session.execute("SELECT q_time FROM queuetime WHERE stamp>='2019-12-12 11:00' AND stamp<='2019-12-12 11:30';")
+	# for r in rows:
+	# 	print(r.__repr__())
+	# rows = session.execute("SELECT AVG(q_time) FROM queuetime WHERE stamp>='2019-12-12 11:00' AND stamp<='2019-12-12 11:30';")
+	# for r in rows:
+	# 	print(r.__repr__())
 
 
 

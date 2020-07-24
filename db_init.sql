@@ -94,5 +94,5 @@ ALTER TABLE product ADD CONSTRAINT fk3_prod FOREIGN KEY	(category) REFERENCES ca
 ALTER TABLE price ADD CONSTRAINT fk1_price FOREIGN KEY (grp_id) REFERENCES product(grp_id);
 ALTER TABLE employee ADD CONSTRAINT fk_emp FOREIGN KEY (role_id) REFERENCES role(role_id);
 
-UPDATE inventory SET shelved_stock=400, back_stock=800;
+UPDATE inventory SET shelved_stock=200, back_stock=800;
 
