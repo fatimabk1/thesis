@@ -1,0 +1,26 @@
+- Category @done 
+- Price ENUM @done 
+- Product  
+    - order(self, n) @done 
+    - generate_exp() @done
+    - get_sublot_quantity() @done
+    - set_sale() @done
+    - set_holiday() @done 
+    - set_regular() @done 
+    - get_price() @done 
+    - get_popularity() @done
+    - get_popularity_delta() @done 
+    - shell program for generating inital product list 
+- Inventory
+    - decrement_n(self, n) @done
+    - available_shelf_space(grp_id) OUTSIDE @done
+    - available_back_space(grp_id) OUTSIDE @done
+    - select(grp_id) OUTSIDE @done
+    - toss(grp_id, n) OUTSIDE @done
+    - restock(grp_id, n) OUTSIDE @done
+    - unload(grp_id) OUTSIDE @done
+    - create_pending(grp_id, sublots) OUTSIDE @done
+    - order_inventory() OUTSIDE @done
+    - toss_list() OUTSIDE @done
+    - restock_list() OUTSIDE @done 
+    - unload_list() OUTSIDE @done

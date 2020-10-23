@@ -44,14 +44,22 @@ db_init.sql is an SQL instruction list to build and populate the database and it
 * lanes are expanded (closed lanes are opened) or collapsed (open lanes are closed) to maintain an acceptable queue time and lane length for customers. Queing customers are redistributed from closed lanes to the consecutive set of open lanes (starting from lane 0). Customers checking out in a closed lane will finish checking out, but that lane will not accept new customers.
 * lanes carry out partial and continuous checkouts. Lanes can checkout x items a minute * they can partly check out a customer or check out multiple customers.
 
+
 ## Simulator
 * Simulator releases new shoppers at the top the hour, according to google maps data on Walmart visitor frequency
 * Simulator time step is one minute
 * Simulator advances shoppers each time step
 * Simulator advances lanes each time step
 * Simulator updates its clock
-* Simulator runs for runtime minutes while regularly adding customers. After runtime minutes, Simulator runs without adding customers in order to close the store.
+* Simulator runs for runtime minutes whilDay-Simulator releases new shoppers at the top the hour, according to google maps data on Walmart visitor frequency
+Day-Simulator time step is one minute
+Day-Simulator advances shoppers each time step
+Day-Simulator advances lanes each time step
+Day-Simulator updates its clock
+Day-Simulator runs for runtime minutes while regularly adding customers. After runtime minutes, Simulator runs without adding customers in order to close the store.e regularly adding customers. After runtime minutes, Simulator runs without adding customers in order to close the store.
 * 
+
+
 
 
 # Future Features:

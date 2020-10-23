@@ -1,0 +1,17 @@
+2020-10-02 17:10:23.502 EDT [25858] FATAL:  lock file "postmaster.pid" already exists
+2020-10-02 17:10:23.502 EDT [25858] HINT:  Is another postmaster (PID 12345) running in data directory "/usr/local/var/postgres"?
+2020-10-02 17:12:09.850 EDT [25902] FATAL:  lock file "postmaster.pid" already exists
+2020-10-02 17:12:09.850 EDT [25902] HINT:  Is another postmaster (PID 25886) running in data directory "/usr/local/var/postgres"?
+2020-10-02 17:12:45.492 EDT [25915] LOG:  could not bind IPv6 address "::1": Address already in use
+2020-10-02 17:12:45.492 EDT [25915] HINT:  Is another postmaster already running on port 5432? If not, wait a few seconds and retry.
+2020-10-02 17:12:45.492 EDT [25915] LOG:  could not bind IPv4 address "127.0.0.1": Address already in use
+2020-10-02 17:12:45.492 EDT [25915] HINT:  Is another postmaster already running on port 5432? If not, wait a few seconds and retry.
+2020-10-02 17:12:45.492 EDT [25915] WARNING:  could not create listen socket for "localhost"
+2020-10-02 17:12:45.492 EDT [25915] FATAL:  could not create any TCP/IP sockets
+2020-10-02 17:12:45.492 EDT [25915] LOG:  database system is shut down
+2020-10-02 17:13:20.947 EDT [25938] FATAL:  lock file "postmaster.pid" already exists
+2020-10-02 17:13:20.947 EDT [25938] HINT:  Is another postmaster (PID 25920) running in data directory "/usr/local/var/postgres"?
+2020-10-02 17:13:56.837 EDT [26086] FATAL:  lock file "postmaster.pid" already exists
+2020-10-02 17:13:56.837 EDT [26086] HINT:  Is another postmaster (PID 25920) running in data directory "/usr/local/var/postgres"?
+2020-10-02 17:16:50.107 EDT [26304] FATAL:  lock file "postmaster.pid" already exists
+2020-10-02 17:16:50.107 EDT [26304] HINT:  Is another postmaster (PID 26293) running in data directory "/usr/local/var/postgres"?

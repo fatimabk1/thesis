@@ -7,34 +7,38 @@
 
 
 # -------------------------------------- RUN APPLICATION
+PURPLE='\033[0;35m'
+NC='\033[0m' # No Color
 echo "Welcome to store simulator. 'r' runs the simulator, 'q' exits and 't' rebuilds the database"
-echo -n "store-sim=# "
+psql -c "CREATE DATABASE store;"  --output='/dev/null'
+python store/models/create_tables.py --output='/dev/null'           # RELATIVE PATH
+psql -c "\i store/db_init.sql"                                      # RELATIVE PATH
+echo -e "${PURPLE}DB setup confirmed.${NC}"
+pg_dump store > store/data/store.dump                               # RELATIVE PATH
+echo -e -n "${PURPLE}store-sim=# ${NC}"
 read COMMAND
-LAST=$COMMAND
 
-while [ "$COMMAND" != "q" ]; do
+while true; do
 	if [ "$COMMAND" == "r" ];then
-		LAST=$COMMAND
-		pg_dump store > store.dump
-		python prog.py 
-		psql -c "DROP DATABASE store;"  --output='/dev/null'
-		psql -c "CREATE DATABASE store;"  --output='/dev/null'
-		psql store < store.dump --output='/dev/null'
+        python store/prog.py                                        # RELATIVE PATH
+        psql -c "DROP DATABASE store;"
+        psql -c "CREATE DATABASE store;"
+        psql store < store/data/store.dump --output='/dev/null'     # RELATIVE PATH
+        echo -e "${PURPLE}Program execution complete.${NC}"
 	elif [ "$COMMAND" == "q" ]; then
-		LAST=$COMMAND
+        psql -c "DROP DATABASE store;" --output='/dev/null'
+        echo -e "${PURPLE}DB removed.${NC}"
 		break
 	elif [ "$COMMAND" == "t" ]; then
 		psql -c "DROP DATABASE store;"  --output='/dev/null'
-		psql -c "\i db_init.sql"
-		echo "database rebuilt"
+        psql -c "CREATE DATABASE store;"  --output='/dev/null'
+        python store/models/create_tables.py --output='/dev/null'     # RELATIVE PATH
+        psql -c "\i store/db_init.sql"                                # RELATIVE PATH
+		echo -e "${PURPLE}DB rebuilt.${NC}"
+    else
+        :
 	fi 
-	echo -n "store-sim=# "
+	echo ""
+    echo -n -e "${PURPLE}store-sim=# ${NC}"
 	read COMMAND
 done
-
-# -------------------------------------- CLEANUP
-# psql -c 'DROP DATABASE store;'
-# psql -c '\q'
-# compress/decompress store.dump later when we input large 
-# amounts of data: https://www.postgresql.org/docs/9.1/backup-dump.html		
-# psql -c '\q'pg_restore -C -d store store.dump
