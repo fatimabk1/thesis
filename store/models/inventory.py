@@ -1,12 +1,12 @@
-from product import ModelProduct
-from cost import ModelCost
 from sqlalchemy import Column, Integer, Date, distinct
-from base import Base, provide_session
 import sys
 from datetime import timedelta, date
 from sqlalchemy.sql import func
 from math import floor
-from constants import CLOCK, TRUCK_DAYS  # REVIEW: clock access
+from models import Base, provide_session, ModelCost, ModelProduct, const
+
+CLOCK = const.CLOCK
+TRUCK_DAYS = const.TRUCK_DAYS
 
 
 class ModelInventory(Base):
@@ -46,7 +46,7 @@ class ModelInventory(Base):
 
 # ------------------------------------------- Inventory-Affiliated Functions
 @provide_session
-def select(grp_id, session=None):
+def select_inv(grp_id, session=None):
     """
     Select an item <grp_id> from the store's shelved stock with soonest
     sell_by date. For a given sell_by date, sort by fewest shelved & back

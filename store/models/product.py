@@ -1,16 +1,16 @@
 from sqlalchemy import Column, Integer, String, Float, Enum
 from sqlalchemy.sql import func
 from sqlalchemy.sql.sqltypes import Date
-# from .base import Base, provide_session
-from . import base
-from constants import CLOCK  # REVIEW: clock access
+from models import const, Base, provide_session  # REVIEW: clock access
 from random import randint
 from datetime import datetime, timedelta, date
 from math import ceil
 from enum import IntEnum
 
+CLOCK = const.CLOCK
 
-class ModelCategory(base.Base):
+
+class ModelCategory(Base):
     __tablename__ = "tbl_category"
 
     cat_id = Column(Integer, primary_key=True)
@@ -30,7 +30,7 @@ class ModelCategory(base.Base):
             return "meat"
 
 
-class ModelSold(base.Base):
+class ModelSold(Base):
     __tablename__ = "tbl_sold"
 
     id = Column(Integer, primary_key=True)
@@ -45,7 +45,7 @@ class PRICE(IntEnum):
     sale = 1
 
 
-class ModelProduct(base.Base):
+class ModelProduct(Base):
     __tablename__ = "tbl_product"
 
     # basic info

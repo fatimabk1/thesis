@@ -1,12 +1,12 @@
 # a program to test the product.py file
-from models.base import provide_session
 from datetime import date
-from models.constants import CLOCK
 from sqlalchemy import func
-from models.product import ModelProduct
-from models.inventory import ModelInventory, available_shelf_space,\
-    order_inventory, restock_list, select, toss, available_back_space,\
-    toss_list, unload_list, restock, unload, create_pending
+from models import const, ModelProduct, ModelInventory,\
+    order_inventory, restock_list, select_inv, toss,\
+    toss_list, unload_list, restock, unload, create_pending,\
+    provide_session
+
+CLOCK = const.CLOCK
 
 
 # -------------------------------------------- Product
@@ -72,8 +72,8 @@ def initialize(session=None):
 def test_inventory(session=None):
     initialize()
 
-    # select()
-    inv_id = select(1)
+    # select_inv()
+    inv_id = select_inv(1)
     assert(inv_id == 4), "fail: select()"
     session.commit()
 

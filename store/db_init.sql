@@ -1,9 +1,9 @@
 \c store;
 
 -- INSERT STARTER DATA INTO TABLES FROM EXCEL SHEETS
-\copy tbl_category FROM 'data/category-2.csv' WITH DELIMITER ',' CSV HEADER;
-\copy tbl_product FROM 'data/product-2.csv' WITH DELIMITER ',' CSV HEADER;
-\copy tbl_inventory FROM 'data/inventory-2.csv' WITH DELIMITER ',' CSV HEADER;
+\copy tbl_category FROM 'store/data/category-2.csv' WITH DELIMITER ',' CSV HEADER;
+\copy tbl_product FROM 'store/data/product-2.csv' WITH DELIMITER ',' CSV HEADER;
+\copy tbl_inventory FROM 'store/data/inventory-2.csv' WITH DELIMITER ',' CSV HEADER;
 
 -- -- Add foreign keys
 ALTER TABLE tbl_sold ADD CONSTRAINT fk1_sold FOREIGN KEY (grp_id) REFERENCES tbl_product (grp_id);

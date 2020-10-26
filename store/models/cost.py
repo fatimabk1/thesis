@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, Float, String, Date
-from base import Base
+from models import Base
 
 
 class ModelCost(Base):

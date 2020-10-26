@@ -17,6 +17,429 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: price; Type: TYPE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE TYPE public.price AS ENUM (
+    'regular',
+    'sale'
+);
+
+
+ALTER TYPE public.price OWNER TO fatimakahbi;
+
+SET default_tablespace = '';
+
+SET default_with_oids = false;
+
+--
+-- Name: tbl_category; Type: TABLE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE TABLE public.tbl_category (
+    cat_id integer NOT NULL,
+    category character varying(50),
+    coefficient double precision
+);
+
+
+ALTER TABLE public.tbl_category OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_category_cat_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.tbl_category_cat_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tbl_category_cat_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_category_cat_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.tbl_category_cat_id_seq OWNED BY public.tbl_category.cat_id;
+
+
+--
+-- Name: tbl_cost; Type: TABLE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE TABLE public.tbl_cost (
+    cost_id integer NOT NULL,
+    stamp date,
+    value double precision,
+    ctype character varying(30)
+);
+
+
+ALTER TABLE public.tbl_cost OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_cost_cost_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.tbl_cost_cost_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tbl_cost_cost_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_cost_cost_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.tbl_cost_cost_id_seq OWNED BY public.tbl_cost.cost_id;
+
+
+--
+-- Name: tbl_inventory; Type: TABLE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE TABLE public.tbl_inventory (
+    id integer NOT NULL,
+    grp_id integer,
+    shelved_stock integer,
+    back_stock integer,
+    pending integer,
+    available date,
+    sell_by date
+);
+
+
+ALTER TABLE public.tbl_inventory OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_inventory_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.tbl_inventory_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tbl_inventory_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_inventory_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.tbl_inventory_id_seq OWNED BY public.tbl_inventory.id;
+
+
+--
+-- Name: tbl_product; Type: TABLE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE TABLE public.tbl_product (
+    grp_id integer NOT NULL,
+    brand character varying(200),
+    name character varying(600),
+    category integer,
+    max_shelved_stock integer,
+    max_back_stock integer,
+    restock_threshold integer,
+    regular_price real,
+    sale_price real,
+    price_status public.price,
+    popularity real,
+    popularity_delta real,
+    lot_price real,
+    lot_quantity integer,
+    sublots integer,
+    sublot_quantity integer,
+    sell_by_days integer,
+    order_threshold integer
+);
+
+
+ALTER TABLE public.tbl_product OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_product_grp_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.tbl_product_grp_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tbl_product_grp_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_product_grp_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.tbl_product_grp_id_seq OWNED BY public.tbl_product.grp_id;
+
+
+--
+-- Name: tbl_sold; Type: TABLE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE TABLE public.tbl_sold (
+    id integer NOT NULL,
+    grp_id integer,
+    date date,
+    sold integer
+);
+
+
+ALTER TABLE public.tbl_sold OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_sold_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.tbl_sold_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tbl_sold_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_sold_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.tbl_sold_id_seq OWNED BY public.tbl_sold.id;
+
+
+--
+-- Name: tbl_category cat_id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_category ALTER COLUMN cat_id SET DEFAULT nextval('public.tbl_category_cat_id_seq'::regclass);
+
+
+--
+-- Name: tbl_cost cost_id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_cost ALTER COLUMN cost_id SET DEFAULT nextval('public.tbl_cost_cost_id_seq'::regclass);
+
+
+--
+-- Name: tbl_inventory id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_inventory ALTER COLUMN id SET DEFAULT nextval('public.tbl_inventory_id_seq'::regclass);
+
+
+--
+-- Name: tbl_product grp_id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_product ALTER COLUMN grp_id SET DEFAULT nextval('public.tbl_product_grp_id_seq'::regclass);
+
+
+--
+-- Name: tbl_sold id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_sold ALTER COLUMN id SET DEFAULT nextval('public.tbl_sold_id_seq'::regclass);
+
+
+--
+-- Data for Name: tbl_category; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
+--
+
+COPY public.tbl_category (cat_id, category, coefficient) FROM stdin;
+1	frozen	0.220000000000000001
+2	refrigerated	0.209999999999999992
+3	pantry	0.550000000000000044
+4	pet	0.0200000000000000004
+\.
+
+
+--
+-- Data for Name: tbl_cost; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
+--
+
+COPY public.tbl_cost (cost_id, stamp, value, ctype) FROM stdin;
+\.
+
+
+--
+-- Data for Name: tbl_inventory; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
+--
+
+COPY public.tbl_inventory (id, grp_id, shelved_stock, back_stock, pending, available, sell_by) FROM stdin;
+1	1	100	0	0	2019-09-10	2019-09-30
+2	1	40	60	0	2019-09-10	2019-09-30
+3	1	0	100	0	2019-09-10	2019-09-30
+4	1	13	0	0	2019-09-10	2019-09-30
+5	2	10	0	0	2019-09-15	2019-10-09
+6	2	0	25	0	2019-09-16	2019-10-10
+7	4	8	0	0	2019-09-10	2019-10-10
+8	4	2	8	0	2019-09-10	2019-10-10
+9	3	0	50	0	2019-09-01	2019-09-14
+10	3	0	50	0	2019-09-01	2019-09-15
+11	3	0	50	0	2019-09-01	2019-09-18
+12	3	0	50	0	2019-09-01	2019-09-12
+13	3	48	0	0	2019-09-01	2019-09-10
+\.
+
+
+--
+-- Data for Name: tbl_product; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
+--
+
+COPY public.tbl_product (grp_id, brand, name, category, max_shelved_stock, max_back_stock, restock_threshold, regular_price, sale_price, price_status, popularity, popularity_delta, lot_price, lot_quantity, sublots, sublot_quantity, sell_by_days, order_threshold) FROM stdin;
+1	pizza	frozen_1	1	200	200	\N	9.98999977	\N	\N	0.430000007	\N	\N	400	4	100	33	\N
+2	meat	fridge_1	2	200	200	\N	12.9899998	\N	\N	0.649999976	\N	\N	100	4	25	23	\N
+3	cheese wheel	fridge_2	2	200	200	\N	4.75	\N	\N	0.460000008	\N	\N	200	4	50	42	\N
+4	yogurt	fridge_3	2	200	50	\N	3.28999996	\N	\N	0.289999992	\N	\N	40	4	10	30	\N
+5	milk	fridge_4	2	200	200	\N	2.99000001	\N	\N	0.449999988	\N	\N	160	4	40	13	\N
+6	special_yogurt	fridge_5	2	200	200	\N	4.5	\N	\N	0.109999999	\N	\N	800	4	200	30	\N
+7	weird_cheese	fridge_6	2	200	200	\N	7.38999987	\N	\N	0.0900000036	\N	\N	100	4	25	40	\N
+8	veggies	frozen_2	1	200	200	\N	2.99000001	\N	\N	0.289999992	\N	\N	200	4	50	80	\N
+9	ice_cream	frozen_3	1	200	200	\N	3.99000001	\N	\N	0.330000013	\N	\N	100	4	25	40	\N
+10	special_ice_cream	frozen_4	1	200	200	\N	4.48999977	\N	\N	0.119999997	\N	\N	40	4	10	40	\N
+11	weird_veggies	frozen_5	1	200	200	\N	4.48999977	\N	\N	0.230000004	\N	\N	80	4	20	80	\N
+12	cereal	pantry_1	3	200	200	\N	2.75	\N	\N	0.670000017	\N	\N	100	4	25	730	\N
+13	honey	pantry_2	3	200	200	\N	2.28999996	\N	\N	0.99000001	\N	\N	40	4	10	730	\N
+14	granola	pantry_4	3	200	200	\N	5.75	\N	\N	0.360000014	\N	\N	160	4	40	365	\N
+15	canned_soup	pantry_5	3	200	200	\N	3.8900001	\N	\N	0.230000004	\N	\N	200	4	50	1460	\N
+16	special_syrup	pantry_6	3	200	200	\N	4.88999987	\N	\N	0.129999995	\N	\N	100	4	25	365	\N
+17	special_honey	pantry_7	3	200	200	\N	3.99000001	\N	\N	0.170000002	\N	\N	100	4	25	720	\N
+18	weird_soup	pantry_8	3	200	200	\N	0.75	\N	\N	0.0599999987	\N	\N	40	4	10	115	\N
+19	weird_cereal	pantry_9	3	200	200	\N	0.289999992	\N	\N	0.0299999993	\N	\N	40	4	10	420	\N
+20	litter	pet_1	4	200	200	\N	33.3300018	\N	\N	0.209999993	\N	\N	20	2	10	800	\N
+\.
+
+
+--
+-- Data for Name: tbl_sold; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
+--
+
+COPY public.tbl_sold (id, grp_id, date, sold) FROM stdin;
+\.
+
+
+--
+-- Name: tbl_category_cat_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.tbl_category_cat_id_seq', 1, false);
+
+
+--
+-- Name: tbl_cost_cost_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.tbl_cost_cost_id_seq', 1, false);
+
+
+--
+-- Name: tbl_inventory_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.tbl_inventory_id_seq', 14, false);
+
+
+--
+-- Name: tbl_product_grp_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.tbl_product_grp_id_seq', 1, false);
+
+
+--
+-- Name: tbl_sold_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.tbl_sold_id_seq', 1, false);
+
+
+--
+-- Name: tbl_category tbl_category_pkey; Type: CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_category
+    ADD CONSTRAINT tbl_category_pkey PRIMARY KEY (cat_id);
+
+
+--
+-- Name: tbl_cost tbl_cost_pkey; Type: CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_cost
+    ADD CONSTRAINT tbl_cost_pkey PRIMARY KEY (cost_id);
+
+
+--
+-- Name: tbl_inventory tbl_inventory_pkey; Type: CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_inventory
+    ADD CONSTRAINT tbl_inventory_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tbl_product tbl_product_pkey; Type: CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_product
+    ADD CONSTRAINT tbl_product_pkey PRIMARY KEY (grp_id);
+
+
+--
+-- Name: tbl_sold tbl_sold_pkey; Type: CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_sold
+    ADD CONSTRAINT tbl_sold_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tbl_inventory fk1_inv; Type: FK CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_inventory
+    ADD CONSTRAINT fk1_inv FOREIGN KEY (grp_id) REFERENCES public.tbl_product(grp_id);
+
+
+--
+-- Name: tbl_product fk1_prod; Type: FK CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_product
+    ADD CONSTRAINT fk1_prod FOREIGN KEY (category) REFERENCES public.tbl_category(cat_id);
+
+
+--
+-- Name: tbl_sold fk1_sold; Type: FK CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_sold
+    ADD CONSTRAINT fk1_sold FOREIGN KEY (grp_id) REFERENCES public.tbl_product(grp_id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
