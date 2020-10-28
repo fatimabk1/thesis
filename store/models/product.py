@@ -6,6 +6,7 @@ from random import randint
 from datetime import datetime, timedelta, date
 from math import ceil
 from enum import IntEnum
+from random import random
 
 CLOCK = const.CLOCK
 
@@ -28,6 +29,23 @@ class ModelCategory(Base):
             return "pet"
         else:
             return "meat"
+
+
+def choose_category():
+    # select a category according to distribution
+    r = random.random()
+    start = 0.02
+    if r < start:
+        category = 1
+    elif r < start + 0.10:
+        category = 2
+    elif r < start + 0.10 + 0.14:
+        category = 3
+    elif r < start + 0.10 + 0.14 + 0.21:
+        category = 4
+    else:
+        category = 5
+    return category
 
 
 class ModelSold(Base):
@@ -89,10 +107,20 @@ class ModelProduct(Base):
             return self.sale_price
 
     def get_popularity(self):
-        return self.popularity
-
-    def get_popularity_delta(self):
-        return self.popularity_delta
+        if self.price_status == PRICE.regular:
+            return self.popularity
+        else:
+            return self.popularity - self.popularity_delta
+  
+    def choose(self, preference):
+        if (self.price_status == PRICE.regular and
+                preference < self.popularity):
+            return True
+        elif (self.price_status == PRICE.sale and
+                preference < self.popularity + self.popularity_delta):
+            return True
+        else:
+            return False
 
     def get_max_back_stock(self):
         return self.max_back_stock

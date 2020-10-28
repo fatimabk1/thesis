@@ -1,7 +1,7 @@
 from datetime import datetime
-from enum import IntEnum
 CLOCK = datetime(2019, 9, 15, 10, 0)
 TRUCK_DAYS = 0
+EOD_FLAG = False
 
 # ------------------------------------------------------------------------------------------------ CONSTANTS & ENUMS
 SUNDAY = 0
@@ -11,15 +11,6 @@ WEDNESDAY = 3
 THURSDAY = 4
 FRIDAY = 6
 SATURDAY = 7
-
-
-class Status(IntEnum):   
-    INERT = 0  # has not started the shopping process yet
-    SHOPPING = 1  # is shopping
-    QUEUEING = 2  # has finished shopping (yet to join a lane || waiting in a lane)
-    CHECKOUT = 3  # lane is in the process of checking out this shopper's cart
-    DONE = 4  # this shopper has completed the checkout process, has no further processes
-
 
 NUM_DAYS = 7	 # 7 days in a week
 DAY_START = 10	 # store opens at 10:00 am
@@ -59,6 +50,7 @@ MIN_LANES = 2					# num of open lanes at start
 HOURS_RUN = 1					# hours to run simulation
 RUN_TIME = HOURS_RUN * 60		# HOURS_RUN converted to minutes
 
+# initally min=10, max=50
 SHOPPER_MIN = 10				# min number of items a shopper will attempt to purchase
 SHOPPER_MAX = 50				# max number of items a shopper will attempt to purchase
 NUM_EMPLOYEES = 30

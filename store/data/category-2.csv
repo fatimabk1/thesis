@@ -1,5 +1,6 @@
 cat_id,category,coefficient
-1,frozen,0.22
-2,refrigerated,0.21
-3,pantry,0.55
-4,pet,0.02
+1,meat,0.02
+2,produce,0.10
+3,freezer,0.14
+4,fridge,0.21
+5,pantry,0.55
