@@ -3,11 +3,15 @@ from sqlalchemy import (Column,
                         Integer,
                         Float)
 import random
+import time
 from datetime import date
 from enum import IntEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.schema import ForeignKey
 from sqlalchemy.sql import func
+from sqlalchemy import and_
+from tabulate import tabulate
+
 from models import (Base,
                     provide_session,
                     ModelProduct,
@@ -19,7 +23,7 @@ from models import (Base,
 # CATEGORY_COUNT, SHOPPER_MIN, SHOPPER_MAX
 from models import constants as const
 from models import cart
-
+# random.seed(time.clock())
 CLOCK = const.CLOCK
 
 
@@ -41,19 +45,27 @@ class ModelPreference(Base):
     sale_roll = Column(Float)
 
     def __repr__(self):
-        return (
-            "<PREF: sid=%d, grp=%d, reg=%d, sale=%d>"
-            % (self.shopper_id, self.grp_id, self.reg_roll, self.sale_roll))
+        return [self.shopper_id,
+                self.grp_id,
+                self.regular_roll,
+                self.sale_roll]
+
+
+def random_start_min():
+    return random.randint(0, 60)
+
+
+def random_quota():
+    return random.randint(const.SHOPPER_MIN, const.SHOPPER_MAX)
 
 
 class ModelShopper(Base):
     __tablename__ = "tbl_shopper"
 
     id = Column(Integer, primary_key=True)
-    start_min = Column(Integer, default=random.randint(0, 60))
+    start_min = Column(Integer, default=random_start_min)
     browse_mins = Column(Integer, default=None)
-    quota = Column(Integer, default=random.randint(
-                    const.SHOPPER_MIN, const.SHOPPER_MAX))
+    quota = Column(Integer, default=random_quota)
     cart_count = Column(Integer, default=None)
     lane = Column(Integer, default=None)
     qtime = Column(Integer, default=None)
@@ -65,13 +77,15 @@ class ModelShopper(Base):
     # be put into the strin properly in __repr__ below
 
     def __repr__(self):
-        return(
-            '''sid_%d: start=%d, browse=%s, quota=%d, cart_count=%s, lane=%s,
-            qtime=%s, status=%s, total=%d'''
-            % (self.id, self.start_min, str(self.browse_mins), self.quota,
-                str(self.cart_count), str(self.lane), str(self.qtime),
-                repr(self.status), self.total)
-            )
+        return [self.id,
+                self.start_min,
+                self.browse_mins,
+                self.quota,
+                self.cart_count,
+                self.lane,
+                self.qtime,
+                self.total,
+                repr(self.status)]
 
     def get_status(self):
         return self.status
@@ -81,29 +95,26 @@ class ModelShopper(Base):
 
     def reset_browse(self):
         if const.EOD_FLAG is True:
-            self.browse_mins = random.randint(1, 3)
+            self.browse_mins = random.randint(1, 4)
         else:
-            self.browse_mins = random.randint(1, 6)
+            self.browse_mins = random.randint(1, 7)
 
     # sample randomly (between 0.01 and 0.99) from distribution
     @provide_session
     def roll(self, grp_id, product, session=None):
         pref = session.query(ModelPreference)\
-            .filter(ModelPreference.shopper_id == self.id)\
-            .filter(ModelPreference.grp_id == grp_id).one_or_none()
-        
+            .filter(and_(ModelPreference.shopper_id == self.id,
+                         ModelPreference.grp_id == grp_id)).one_or_none()
         if pref is None:
-            reg = random.rand()  # FIXME
-            sale = random.rand()  # FIXME
+            reg = round(random.random(), 2)
+            sale = round(random.uniform(0, 1-reg) % reg, 2)
             pref = ModelPreference(
                 shopper_id=self.id,
                 grp_id=grp_id,
                 regular_roll=reg,
-                sale_roll=sale
-            )
+                sale_roll=sale)
             session.add(pref)
             session.commit()
-
         return pref
 
     @provide_session
@@ -114,10 +125,11 @@ class ModelShopper(Base):
             prod = session.query(ModelProduct)\
                 .filter(ModelProduct.category == category)\
                 .order_by(func.random()).first()
-            pref = self.roll(session)
-            if prod.evaluate(pref) is True:
+            pref = self.roll(prod.grp_id, session)
+            if prod.choose(pref.regular_roll, pref.sale_roll) is True:
                 cart.add_item(self.id, prod.grp_id, session)
                 break
+        return pref
 
     # START HERE
     @provide_session

@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, func
+from tabulate import tabulate
 from models import inventory
 from models import Base, provide_session, ModelProduct
 
@@ -15,9 +16,11 @@ class ModelCart(Base):
     def __repr__(self, session):
         info = session.query(ModelProduct.name, ModelProduct.brand)\
             .filter(ModelProduct.grp_id == self.grp_id).one()
-        return ("< item_%d: name=%s, brand=%s, inv_id=%s, grp_id=%s >" %
-                (self.id, info.name, info.brand,
-                    self.inventory_id, self.grp_id))
+        return [self.id,
+                self.grp_id,
+                self.inventory_id,
+                info.name,
+                info.brand]
 
 
 @provide_session
@@ -26,9 +29,18 @@ def print_cart(sid, session=None):
     size = get_size(sid, session)
     cart = session.query(ModelCart)\
         .filter(ModelProduct.shopper_id == sid).all()
-    print("CART_%d: total=%d, size=%d" % (sid, tot, size))
+
+    table = []
     for item in cart:
-        print("\t", item.__repr__())
+        table.append(item.__repr__())
+    print("\n-------------------- CART_{}: total = {}, size = {} -------------------"
+          .format(sid, tot, size))
+    headers = ["item_id",
+               "product",
+               "inv_id",
+               "name",
+               "brand"]
+    print(tabulate(table, headers, tablefmt="fancy_grid"))
 
 
 @provide_session
@@ -38,7 +50,8 @@ def add_item(sid, grp_id, session=None):
         shopper_id=sid,
         inventory_id=inv_id
     )
-    session.commit(row)
+    session.add(row)
+    session.commit()
 
 
 @provide_session

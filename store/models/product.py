@@ -1,12 +1,15 @@
 from sqlalchemy import Column, Integer, String, Float, Enum
 from sqlalchemy.sql import func
 from sqlalchemy.sql.sqltypes import Date
-from models import const, Base, provide_session  # REVIEW: clock access
 from random import randint
 from datetime import datetime, timedelta, date
 from math import ceil
 from enum import IntEnum
-from random import random
+import random
+from tabulate import tabulate
+
+from models import const, Base, provide_session  # REVIEW: clock access
+
 
 CLOCK = const.CLOCK
 
@@ -33,7 +36,7 @@ class ModelCategory(Base):
 
 def choose_category():
     # select a category according to distribution
-    r = random.random()
+    r = round(random.random(), 2)
     start = 0.02
     if r < start:
         category = 1
@@ -112,12 +115,13 @@ class ModelProduct(Base):
         else:
             return self.popularity - self.popularity_delta
   
-    def choose(self, preference):
+    def choose(self, reg_pref, sale_pref):
         if (self.price_status == PRICE.regular and
-                preference < self.popularity):
+                reg_pref < self.popularity):
             return True
         elif (self.price_status == PRICE.sale and
-                preference < self.popularity + self.popularity_delta):
+                reg_pref - sale_pref <
+                self.popularity + self.popularity_delta):
             return True
         else:
             return False
@@ -167,19 +171,31 @@ class ModelProduct(Base):
         self.price_status = PRICE.regular
         self.popularity_delta = round(0.12 * self.popularity, 2)
         self.lot_price = 2
-        self.order_threshold = self.max_shelved_stock
-        self.restock_threshold = round(self.max_shelved_stock / 2)
+        self.max_shelved_stock = self.lot_quantity * 2
+        self.max_back_stock = self.lot_quantity * 8
+        self.order_threshold = round(self.max_back_stock/2)
+        self.restock_threshold = round((self.max_shelved_stock / 3) * 2)
+        return self.row_order_info()
+
+    def row_order_info(self):
+        return [self.grp_id,
+                self.max_back_stock,
+                self.order_threshold,
+                self.max_shelved_stock,
+                self.restock_threshold,
+                self.lot_quantity,
+                ]
 
     @provide_session
-    def __repr__(self, session=None):
+    def row_basic_info(self, session=None):
         cat = session.query(ModelCategory)\
             .filter(ModelCategory.cat_id == self.category).first()
-        return (
-            "<Product(grp_id={}, category={}, price_status={}, "
-            "reg_price={}, sale_price={}, popularity={}%, "
-            "popularity_delta={})"
-            .format(
-                self.grp_id, cat, self.price_status, self.regular_price,
-                self.sale_price, self.popularity, self.popularity_delta
-            )
-        )
+
+        return [self.grp_id,
+                cat,
+                self.price_status,
+                self.regular_price,
+                self.sale_price,
+                self.popularity,
+                self.popularity_delta
+                ]

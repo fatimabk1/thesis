@@ -1,8 +1,10 @@
+from store.models import cart
 from sqlalchemy import Column, Integer, Date, distinct
 import sys
 from datetime import timedelta, date
 from sqlalchemy.sql import func
 from math import floor
+from tabulate import tabulate
 from models import Base, provide_session, ModelCost, ModelProduct, const
 
 CLOCK = const.CLOCK
@@ -17,43 +19,55 @@ class ModelInventory(Base):
     shelved_stock = Column(Integer)
     back_stock = Column(Integer)
     pending = Column(Integer)
+    cart_stock = Column(Integer)
     available = Column(Date)  # truck -> back storage
     sell_by = Column(Date)
 
-    def _repr_(self):
-        return (
-            "<Inventory(id={}, grp_id = {}, shelved={}, back={}, "
-            "pending={}, available={}, sell_by={})>"
-            .format(
-                self.id, self.grp_id, self.shelved_stock,
-                self.back_stock, self.pending, self.available,
-                self.sell_by
-                    )
-                )
+    def __repr__(self):
+        return [self.id,
+                self.grp_id,
+                self.shelved_stock,
+                self.back_stock,
+                self.pending,
+                self.cart_stock,
+                self.available,
+                self.sell_by]
 
     @provide_session
-    def decrement_n(self, n, session=None):
-        if self.shelved_stock >= n:
-            self.shelved_stock -= n
-            if self.shelved_stock == 0 and self.back_stock == 0:
-                row = session.query(ModelInventory)\
-                    .filter(ModelInventory.id == self.id).one()
-                session.delete(row)
-        else:
-            sys.exit("decrement_n(): invalid n")
+    def decrement_pending(self, n, session=None):
+        assert(self.pending >= n), "decrement_pending(): invalid n"
+        self.pending -= n
+        self.back_stock -= n
+        session.commit()
+
+    @provide_session
+    def decrement_back(self, n, session=None):
+        assert(self.back_stock >= n), "decrement_back(): invalid n"
+        self.back_stock -= n
+        self.shelved_stock -= n
+        session.commit()
+
+    @provide_session
+    def decrement_shelved(self, n, session=None):
+        assert(self.shelved_stock >= n), "decrement_shelved(): invalid n"
+        self.shelved_stock -= n
+        self.cart_stock += n
+        session.commit()
+
+    @provide_session
+    def decrement_cart(self, n, session=None):
+        assert(self.cart_stock >= n), "decrement_cart(): invalid n"
+        self.cart_stock -= n
+        if (self.cart_stock == 0 and self.shelved_stock == 0 and self.back_stock == 0):
+            row = session.query(ModelInventory)\
+                .filter(ModelInventory.id == self.id).one()
+            session.delete(row)
         session.commit()
 
 
 # ------------------------------------------- Inventory-Affiliated Functions
 @provide_session
 def select_inv(grp_id, session=None):
-    """
-    Select an item <grp_id> from the store's shelved stock with soonest
-    sell_by date. For a given sell_by date, sort by fewest shelved & back
-    stock.
-    :returns:
-        Returns the inventory_id of the selected stock
-    """
     today = date(CLOCK.year, CLOCK.month, CLOCK.day)
     inv = session.query(ModelInventory)\
         .filter(ModelInventory.grp_id == grp_id)\
@@ -64,56 +78,27 @@ def select_inv(grp_id, session=None):
         .order_by(ModelInventory.shelved_stock.asc()).first()
     if inv is None:
         sys.exit("FATAL select_inv(): no inventory fits criteria")
-    inv.decrement_n(1)
+    inv.decrement_shelved(1, session)
     return inv.id
 
 
 @provide_session
 def toss(grp_id, n, session=None):
-    """
-    Remove up to <n> items of expired (shelved and back) stock for a particular
-    product <grp_id>. This can span mutiple inventory entries.
-    :param int grp_id:
-        The prodcut to removed.
-    :param int n:
-        number of items to remove
-    """
-    # list of inventory entries with sell_by date matching current
-    # or previous CLOCK date, sorted in order of earliest date
     today = date(CLOCK.year, CLOCK.month, CLOCK.day)
     inv_list = session.query(ModelInventory)\
         .filter(ModelInventory.grp_id == grp_id)\
         .filter(ModelInventory.sell_by <= today)\
         .order_by(ModelInventory.sell_by.asc()).all()
 
-    if inv_list[0] is None:  # CHECK
-        sys.exit("Fatal: request to toss() nonexistent inventory")
+    assert(inv_list[0] is not None), "toss(): nonexistent inventory"
 
     for inv in inv_list:
-        print("n = %d, len(inv_list) = %d" % (n, len(inv_list)))
         if n == 0:
-            print("departing")
             break
-        print(
-            "\tid = %d, shelved = %d, back = %d | n = %d" %
-            (inv.id, inv.shelved_stock, inv.back_stock, n)
-            )
-        if inv.shelved_stock >= n:
-            print("\teliminating part of shelved stock")
-            inv.shelved_stock -= n
-            n = 0
         else:
-            n = n - inv.shelved_stock
-            inv.shelved_stock = 0
-            if inv.back_stock >= n:
-                print("\teliminating all shelved + partial back")
-                inv.back_stock -= n
-                n = 0
-            else:
-                print("\teliminating all shelved + all back stock --> deleting entry")
-                n = n - inv.back_stock
-                inv.back_stock = 0
-                session.delete(inv)
+            q = min(inv.shelved_stock, n)
+            inv.decrement_shelved(q, session)
+            n -= q
     session.commit()
 
 
@@ -145,15 +130,14 @@ def available_back_space(grp_id, session=None):
         return max_back_stock - back_stock
 
 
+# START HERE >>>>>>>>> cleaning up functions :)
+# --> use min to set limiting factor use new decrement_xxx() functions for
+# restock/unload/toss/create_pending -- this could use an increment function()
+# NEXT >>>>>>>>>>>>>>> double check that inventory still works
+# NEXT NEXT >>>>>>>>>> WHEN_2_ORDER vs QUANTITY_2_ORDER
+# for order and restock lists
 @provide_session
 def restock(grp_id, n, session=None):
-    '''
-    Transfer up to <n> items from back_stock to shelved_stock for a
-    product <grp_id> in order of soonest sell_by date.
-    :Constraint: can't exceed max_shelved_stock for that product.
-    '''
-    # product's inventory entries that have stock in back, ordered by
-    # sell_by date
     product = session.query(ModelProduct)\
         .filter(ModelProduct.grp_id == grp_id).one()
     inv_list = session.query(ModelInventory)\
@@ -161,37 +145,26 @@ def restock(grp_id, n, session=None):
         .filter(ModelInventory.shelved_stock < product.get_sublot_quantity())\
         .filter(ModelInventory.back_stock > 0)\
         .order_by(ModelInventory.sell_by)\
-        .order_by(ModelInventory.id).all()  # TEST
+        .order_by(ModelInventory.id).all()
 
     shelf_space = available_shelf_space(grp_id, session)
-    if n > shelf_space:
-        n = shelf_space
+    n = min(n, shelf_space)
 
-    print("\ngrp_id=%d, space=%d, lot_q=%d" % (
-        grp_id, shelf_space, product.get_lot_quantity()))
-    # for each inv, transfer up to n items from back to shelved stock
+    # for each inv, transfer min(n, shelf_space) from back to shelved stock
     for inv in inv_list:
-        print("\n\tBEFORE--", inv._repr_())
-        if inv.back_stock >= n:
-            inv.shelved_stock += n
-            inv.back_stock -= n
-            n = 0
-        else:
-            n = n - inv.back_stock
-            inv.shelved_stock += inv.back_stock
-            inv.back_stock = 0
-        session.commit()
-        r = session.query(ModelInventory)\
-            .filter(ModelInventory.id == inv.id).one()
-        print("\tAFTER-- ", r._repr_())
         if n == 0:
             break
+        else:
+            q = min(inv.back_stock, n)
+            inv.decrement_back(q, session)
+            n -= q
+    session.commit()
 
 
 # unloads one lot of product into back storage
 @provide_session
 def unload(grp_id, session=None):
-    print("-------------------------------- UNLOAD --------------------------")
+    # list of inventory to unload
     product = session.query(ModelProduct)\
         .filter(ModelProduct.grp_id == grp_id).first()
     today = date(CLOCK.year, CLOCK.month, CLOCK.day)
@@ -203,17 +176,12 @@ def unload(grp_id, session=None):
         .filter(ModelInventory.pending > 0)\
         .order_by(ModelInventory.id).all()
 
-    # set limiting factor (storage space or lot quantity)
-    if space < q:
-        q = space
-
-    # unload at most max(space, q)
+    # unload
+    q = min(space, q)
     for inv in inv_list:
-        if q == 0:  # unloaded max amt for one time step
+        if q == 0:
             break
-
-        # unload items
-        if q > inv.pending:
+        elif q > inv.pending:
             inv.back_stock += inv.pending
             q -= inv.pending
             inv.pending = 0
@@ -221,9 +189,7 @@ def unload(grp_id, session=None):
             inv.back_stock += q
             inv.pending -= q
             q = 0
-
-        session.commit()
-    return
+    session.commit()
 
 
 # creates a set of pending inventory entries for ordered stock
@@ -248,68 +214,35 @@ def create_pending(grp_id, sublots, session=None):
 @provide_session
 def order_inventory(session=None):
     products = session.query(ModelProduct).all()
-    order_cost = 0
-    for prod in products:
-        inv_stock = session.query(
-            func.sum(ModelInventory.shelved_stock),
-            func.sum(ModelInventory.back_stock)
-            ).filter(ModelInventory.grp_id == prod.grp_id).one()
-
-        SHELVED = 0
-        BACK = 1
-        if inv_stock[SHELVED] is None and inv_stock[BACK] is None:
-            total_stock = 0
-        elif inv_stock[SHELVED] is None:
-            total_stock = inv_stock[BACK]
-        elif inv_stock[BACK] is None:
-            total_stock = inv_stock[SHELVED]
-        else:
-            total_stock = inv_stock[SHELVED] + inv_stock[BACK]
-
-        if total_stock < prod.order_threshold:
-            # order enough stock to have up to order_threshold total items
-            # do not violate storage constraints
-            shortage = prod.order_threshold - total_stock
-            space = available_back_space(prod.grp_id)
-            delta = min(shortage, space)
-            money = order(prod, delta)
-            order_cost += money
-
     today = date(CLOCK.year, CLOCK.month, CLOCK.day)
-    c = ModelCost(stamp=today, value=order_cost, ctype="labor")
-    session.add(c)
+    order_cost = 0
+    table = []
+
+    for prod in products:
+        quantity = prod.max_back_stock - prod.order_threshold
+        money = order(prod, quantity, table, session)
+        order_cost += money
+        c = ModelCost(stamp=today, value=order_cost, ctype="labor")
+        session.add(c)
     session.commit()
+
+    # print inventory order
+    print(" -------------------------- ORDER --------------------------")
+    headers = ["product", "total_quantity", "# pending inv", "inv_quantity"]
+    print(tabulate(table, headers, tablefmt="fancy_grid"))
 
 
 @provide_session
-def order(product, quantity):
-    """ Return the number of sublots required for an order of at most
-        quantity items.
-    :Constraint: can't excceed the available storage space in inventory
-        (max_back_stock)
-    :Constraint: can't exceed quantity
-    :param int quantity:
-        Number of individual products for reorder
-    :param int grp_id:
-        The grp_id of the product to reorder
-    :returns:
-        Returns the number of sublots to order at most n individual items, 
-        without overshooting.
-    :rtype:
-        int
-    """
-    if quantity <= 0:
-        sys.exit("order(): invalid quantity")
-
-    back_stock = available_back_space(product.grp_id)
-    space = product.max_back_stock - back_stock
-    if space < quantity:
-        num_lots = floor(quantity / product.lot_quantity)
-    else:
-        num_lots = floor(space / product.lot_quantity)
-
-    sublots = num_lots * product.sublots
-    create_pending(product.grp_id, sublots)
+def order(product, quantity, table, session=None):
+    lot_q = product.get_lot_quantity()
+    num_lots = floor(quantity / lot_q)
+    assert(num_lots >= 2)
+    sublots = num_lots * product.get_num_sublots()
+    table.append([product.grp_id,
+                  num_lots * lot_q,
+                  sublots,
+                  floor(lot_q/sublots)])
+    create_pending(product.grp_id, sublots, session)
     return product.lot_price * num_lots
 
 
@@ -327,6 +260,7 @@ def toss_list(session=None):
 
 @provide_session
 def restock_list(session=None):
+    table = []
     inv_list = []
     products = session.query(ModelProduct).all()
     for prod in products:
@@ -338,8 +272,15 @@ def restock_list(session=None):
             current_shelved_stock = 0
 
         if current_shelved_stock < prod.restock_threshold:
+            table.append([prod.grp_id,
+                         current_shelved_stock,
+                         prod.restock_threshold - current_shelved_stock])
             inv_list.append(prod.grp_id)
 
+    # print restocked
+    # print("\n-------------------- RESTOCKED ------------------- ")
+    # headers = ["product", "shelved", "remaining"]
+    # print(tabulate(table, headers, tablefmt="fancy_grid"))
     return inv_list
 
 

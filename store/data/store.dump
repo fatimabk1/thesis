@@ -546,26 +546,26 @@ COPY public.tbl_preference (id, shopper_id, grp_id, regular_roll, sale_roll) FRO
 --
 
 COPY public.tbl_product (grp_id, brand, name, category, max_shelved_stock, max_back_stock, restock_threshold, regular_price, sale_price, price_status, popularity, popularity_delta, lot_price, lot_quantity, sublots, sublot_quantity, sell_by_days, order_threshold) FROM stdin;
-1	pizza	frozen_1	1	200	200	\N	9.98999977	\N	\N	0.430000007	\N	\N	400	4	100	33	\N
-2	meat	fridge_1	2	200	200	\N	12.9899998	\N	\N	0.649999976	\N	\N	100	4	25	23	\N
-3	cheese wheel	fridge_2	2	200	200	\N	4.75	\N	\N	0.460000008	\N	\N	200	4	50	42	\N
-4	yogurt	fridge_3	2	200	50	\N	3.28999996	\N	\N	0.289999992	\N	\N	40	4	10	30	\N
-5	milk	fridge_4	2	200	200	\N	2.99000001	\N	\N	0.449999988	\N	\N	160	4	40	13	\N
-6	special_yogurt	fridge_5	2	200	200	\N	4.5	\N	\N	0.109999999	\N	\N	800	4	200	30	\N
-7	weird_cheese	fridge_6	2	200	200	\N	7.38999987	\N	\N	0.0900000036	\N	\N	100	4	25	40	\N
-8	veggies	frozen_2	1	200	200	\N	2.99000001	\N	\N	0.289999992	\N	\N	200	4	50	80	\N
-9	ice_cream	frozen_3	1	200	200	\N	3.99000001	\N	\N	0.330000013	\N	\N	100	4	25	40	\N
-10	special_ice_cream	frozen_4	1	200	200	\N	4.48999977	\N	\N	0.119999997	\N	\N	40	4	10	40	\N
-11	weird_veggies	frozen_5	1	200	200	\N	4.48999977	\N	\N	0.230000004	\N	\N	80	4	20	80	\N
-12	cereal	pantry_1	3	200	200	\N	2.75	\N	\N	0.670000017	\N	\N	100	4	25	730	\N
-13	honey	pantry_2	3	200	200	\N	2.28999996	\N	\N	0.99000001	\N	\N	40	4	10	730	\N
-14	granola	pantry_4	3	200	200	\N	5.75	\N	\N	0.360000014	\N	\N	160	4	40	365	\N
-15	canned_soup	pantry_5	3	200	200	\N	3.8900001	\N	\N	0.230000004	\N	\N	200	4	50	1460	\N
-16	special_syrup	pantry_6	3	200	200	\N	4.88999987	\N	\N	0.129999995	\N	\N	100	4	25	365	\N
-17	special_honey	pantry_7	3	200	200	\N	3.99000001	\N	\N	0.170000002	\N	\N	100	4	25	720	\N
-18	weird_soup	pantry_8	3	200	200	\N	0.75	\N	\N	0.0599999987	\N	\N	40	4	10	115	\N
-19	weird_cereal	pantry_9	3	200	200	\N	0.289999992	\N	\N	0.0299999993	\N	\N	40	4	10	420	\N
-20	litter	pet_1	4	200	200	\N	33.3300018	\N	\N	0.209999993	\N	\N	20	2	10	800	\N
+1	pizza	frozen_1	1	\N	\N	\N	9.98999977	\N	\N	0.430000007	\N	\N	400	4	100	33	\N
+2	meat	fridge_1	2	\N	\N	\N	12.9899998	\N	\N	0.649999976	\N	\N	100	4	25	23	\N
+3	cheese wheel	fridge_2	2	\N	\N	\N	4.75	\N	\N	0.460000008	\N	\N	200	4	50	42	\N
+4	yogurt	fridge_3	5	\N	\N	\N	3.28999996	\N	\N	0.289999992	\N	\N	40	4	10	30	\N
+5	milk	fridge_4	2	\N	\N	\N	2.99000001	\N	\N	0.449999988	\N	\N	160	4	40	13	\N
+6	special_yogurt	fridge_5	2	\N	\N	\N	4.5	\N	\N	0.109999999	\N	\N	800	4	200	30	\N
+7	weird_cheese	fridge_6	2	\N	\N	\N	7.38999987	\N	\N	0.0900000036	\N	\N	100	4	25	40	\N
+8	veggies	frozen_2	1	\N	\N	\N	2.99000001	\N	\N	0.289999992	\N	\N	200	4	50	80	\N
+9	ice_cream	frozen_3	1	\N	\N	\N	3.99000001	\N	\N	0.330000013	\N	\N	100	4	25	40	\N
+10	special_ice_cream	frozen_4	5	\N	\N	\N	4.48999977	\N	\N	0.119999997	\N	\N	40	4	10	40	\N
+11	weird_veggies	frozen_5	1	\N	\N	\N	4.48999977	\N	\N	0.230000004	\N	\N	80	4	20	80	\N
+12	cereal	pantry_1	3	\N	\N	\N	2.75	\N	\N	0.670000017	\N	\N	100	4	25	730	\N
+13	honey	pantry_2	5	\N	\N	\N	2.28999996	\N	\N	0.99000001	\N	\N	40	4	10	730	\N
+14	granola	pantry_4	3	\N	\N	\N	5.75	\N	\N	0.360000014	\N	\N	160	4	40	365	\N
+15	canned_soup	pantry_5	3	\N	\N	\N	3.8900001	\N	\N	0.230000004	\N	\N	200	4	50	1460	\N
+16	special_syrup	pantry_6	3	\N	\N	\N	4.88999987	\N	\N	0.129999995	\N	\N	100	4	25	365	\N
+17	special_honey	pantry_7	4	\N	\N	\N	3.99000001	\N	\N	0.170000002	\N	\N	100	4	25	720	\N
+18	weird_soup	pantry_8	5	\N	\N	\N	0.75	\N	\N	0.0599999987	\N	\N	40	4	10	115	\N
+19	weird_cereal	pantry_9	4	\N	\N	\N	0.289999992	\N	\N	0.0299999993	\N	\N	40	4	10	420	\N
+20	litter	pet_1	4	\N	\N	\N	33.3300018	\N	\N	0.209999993	\N	\N	20	2	10	800	\N
 \.
 
 

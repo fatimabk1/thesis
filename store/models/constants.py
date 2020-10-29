@@ -1,6 +1,6 @@
 from datetime import datetime
 CLOCK = datetime(2019, 9, 15, 10, 0)
-TRUCK_DAYS = 0
+TRUCK_DAYS = 0  # initally 3
 EOD_FLAG = False
 
 # ------------------------------------------------------------------------------------------------ CONSTANTS & ENUMS
@@ -51,6 +51,6 @@ HOURS_RUN = 1					# hours to run simulation
 RUN_TIME = HOURS_RUN * 60		# HOURS_RUN converted to minutes
 
 # initally min=10, max=50
-SHOPPER_MIN = 10				# min number of items a shopper will attempt to purchase
-SHOPPER_MAX = 50				# max number of items a shopper will attempt to purchase
+SHOPPER_MIN = 30				# min number of items a shopper will attempt to purchase
+SHOPPER_MAX = 30				# max number of items a shopper will attempt to purchase
 NUM_EMPLOYEES = 30

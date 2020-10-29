@@ -1,13 +1,16 @@
 # a program to test the product.py file
 from datetime import date, datetime, timedelta
+from sqlalchemy import func
+from tabulate import tabulate
+
 from models.shopper import ModelPreference, ModelShopper
 from models.inventory import available_back_space
-from sqlalchemy import func
 from models import const, ModelProduct, ModelInventory, ModelShopper,\
     order_inventory, restock_list, select_inv,\
     toss_list, unload_list, restock, unload, create_pending,\
     provide_session, Status
 from models import cart
+from models import inventory
 
 CLOCK = const.CLOCK
 
@@ -66,11 +69,35 @@ def test_product(session=None):
 @provide_session
 def initialize(session=None):
     products = session.query(ModelProduct).all()
+    table = []
     for prod in products:
-        prod.setup()
+        table.append(prod.setup())
+
+    # print products
+    print("\n------------------ PRODUCTS ------------------")
+    headers = ["product", "max_back", "order_thresh",
+               "max_shelf", "restock_thresh", "lot_q"]
+    print(tabulate(table, headers, tablefmt="fancy_grid"))
+
+    # inital inventory order
+    inventory.order_inventory(session)
+    lst = inventory.unload_list(session)
+    while lst:
+        for grp in lst:
+            unload(grp, session)
+        lst = inventory.unload_list(session)
+        print("Remaining Unloads:", lst)
+
+    # initial restock
+    lst = inventory.restock_list(session)
+    while lst:
+        for grp in lst:
+            restock(grp, 1000, session)
+            lst = inventory.restock_list(session)
+            print("\nRemaining Restocks:", lst)
 
 
-# -------------------------------------------- Inventory
+# ----------------------------------------------------------- Inventory
 @provide_session
 def test_inventory(session=None):
     initialize()
@@ -175,19 +202,37 @@ def test_inventory(session=None):
         restock(grp, 200)
 
 
-# -------------------------------------------- Shopper & Cart
+# ----------------------------------------------------------- Shopper & Cart
 @provide_session
 def test_shopper_cart(session=None):
     initialize()
-    print("SHOPPER CREATE:")
-    # create & __repr__
+
+# ======================================================== #
+# =================== create & __repr__ ================== #
+# ======================================================== #
     for i in range(50):
         s = ModelShopper()
         session.add(s)
-        print("\t", s.__repr__())
     session.commit()
+    group = session.query(ModelShopper).all()
+    table = []
+    for s in group:
+        table.append(s.__repr__())
+    print("\n-------------------- SHOPPERS_pre_stat ------------------- ")
+    headers = ["id",
+               "start",
+               "browse",
+               "quota",
+               "cart count",
+               "lane",
+               "qtime",
+               "total",
+               "status"]
+    print(tabulate(table, headers, tablefmt="fancy_grid"))
 
-    # set_status() & get_status()
+# ======================================================== #
+# ============== set_status() & get_status() ============= #
+# ======================================================== #
     print("\nSET & GET STATUS:")
     group = session.query(ModelShopper).all()
     for shopper in group:
@@ -195,67 +240,91 @@ def test_shopper_cart(session=None):
         shopper.set_status(Status.SHOPPING)
     session.commit()
     group = session.query(ModelShopper).all()
+    table = []
     for shopper in group:
         assert(shopper.get_status() == Status.SHOPPING)
-        print("\tstatus: ", shopper.__repr__())
+        table.append(shopper.__repr__())
+    print("\n-------------------- SHOPPERS_post_stat ------------------- ")
+    headers = ["id",
+               "start",
+               "browse",
+               "quota",
+               "cart count",
+               "lane",
+               "qtime",
+               "total",
+               "status"]
+    print(tabulate(table, headers, tablefmt="fancy_grid"))
 
-    # reset_browse
+# ======================================================== #
+# ===================== reset_browse ===================== #
+# ======================================================== #
     print("\nBROWSE_RESET:")
     sid = group[0].id
     group[0].reset_browse()
     session.commit()
+    table = []
     s = session.query(ModelShopper)\
         .filter(ModelShopper.id == sid).one()
-    print("\treset: ", s.__repr__())
+    row = s.__repr__()
+    row = [1, row[2]]
+    table.append(row)
     s.reset_browse()
     session.commit()
     s = session.query(ModelShopper)\
         .filter(ModelShopper.id == sid).one()
-    print("\treset: ", s.__repr__())
+    row = s.__repr__()
+    row = [2, row[2]]
+    table.append(row)
     s.reset_browse()
     session.commit()
     s = session.query(ModelShopper)\
         .filter(ModelShopper.id == sid).one()
-    print("\treset: ", s.__repr__()) 
+    row = s.__repr__()
+    row = [3, row[2]]
+    table.append(row)
+    print("\n-------------------- SHOPPERS_browse ------------------- ")
+    headers = ["reset #",
+               "browse_mins"]
+    print(tabulate(table, headers, tablefmt="fancy_grid"))
 
-    # roll
+# ======================================================== #
+# ================== select_grp & roll =================== #
+# ======================================================== #
     group = session.query(ModelShopper).all()
     for shopper in group:
-        # confirm that roll works
-        pref = shopper.roll(1, session)
-        reg = pref.regular_roll
-        sale = pref.sale_roll
-        session.commit()
-        pref_db = session.query(ModelPreference)\
-            .filter(ModelPreference.id == pref.id).one()
-        assert(reg == pref_db.regular_roll and sale == pref_db.sale_roll)
-
-        # confirm that re-rolling does not change preference
-        shopper.roll(1, session)
-        session.commit()
-        pref_db = session.query(ModelPreference)\
-            .filter(ModelPreference.id == pref.id).one()
-        assert(reg == pref_db.regular_roll and sale == pref_db.sale_roll)
-
-    # select_grp
-    group = session.query(ModelShopper).all()
-    for shopper in group:
+        table = []
         for i in range(30):
-            shopper.select_grp()
+            pref = shopper.select_grp()
+            table.append(pref.__repr__())
         session.commit()
+        print("\n-------------------- PREFERENCES_{} ------------------- "
+              .format(shopper.id))
+        headers = ["sid",
+                   "product",
+                   "reg_roll",
+                   "sale_roll"]
+        print(tabulate(table, headers, tablefmt="fancy_grid"))
         cart.print_cart(shopper.id, session)
 
-    # scan_n
+# ======================================================== #
+# ======================== scan_n ======================== #
+# ======================================================== #
     group = session.query(ModelShopper).all()
     for shopper in group:
         cart.scan_n(shopper.id, 12, session)
         session.commit()
+        print("\n-------------------- CHECKOUT_{} ------------------- "
+              .format(shopper.id))
         cart.print_cart(shopper.id, session)
+        assert(cart.get_size(shopper.id, session) == 30-12)
 
-    # advance
+# ======================================================== #
+# ======================== advance ======================= #
+# ======================================================== #
     const.CLOCK = datetime(2019, 9, 15, 10, 0)
     for i in range(120):
-        group = session.query(ModelShopper).all() 
+        group = session.query(ModelShopper).all()
         for shopper in group:
             shopper.advance(session)
             print("\t", shopper.__repr__())
