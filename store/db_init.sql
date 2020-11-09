@@ -7,7 +7,7 @@
 
 -- Add foreign keys
 ALTER TABLE tbl_sold ADD CONSTRAINT fk1_sold FOREIGN KEY (grp_id) REFERENCES tbl_product (grp_id);
-ALTER TABLE tbl_product ADD CONSTRAINT fk1_prod FOREIGN KEY (category) REFERENCES tbl_category (cat_id);
+ALTER TABLE tbl_product ADD CONSTRAINT fk1_prod FOREIGN KEY (category) REFERENCES tbl_category (id);
 ALTER TABLE tbl_inventory ADD CONSTRAINT fk1_inv FOREIGN KEY (grp_id) REFERENCES tbl_product (grp_id);
 ALTER TABLE tbl_cart ADD CONSTRAINT fk2_cart FOREIGN KEY (inventory_id) REFERENCES tbl_inventory (id);
 ALTER TABLE tbl_cart ADD CONSTRAINT fk1_cart FOREIGN KEY (shopper_id) REFERENCES tbl_shopper (id);

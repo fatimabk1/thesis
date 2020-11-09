@@ -73,19 +73,19 @@ ALTER SEQUENCE public.tbl_cart_id_seq OWNED BY public.tbl_cart.id;
 --
 
 CREATE TABLE public.tbl_category (
-    cat_id integer NOT NULL,
+    id integer NOT NULL,
     category character varying(50),
-    coefficient double precision
+    count integer
 );
 
 
 ALTER TABLE public.tbl_category OWNER TO fatimakahbi;
 
 --
--- Name: tbl_category_cat_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+-- Name: tbl_category_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
 --
 
-CREATE SEQUENCE public.tbl_category_cat_id_seq
+CREATE SEQUENCE public.tbl_category_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -94,13 +94,13 @@ CREATE SEQUENCE public.tbl_category_cat_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.tbl_category_cat_id_seq OWNER TO fatimakahbi;
+ALTER TABLE public.tbl_category_id_seq OWNER TO fatimakahbi;
 
 --
--- Name: tbl_category_cat_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+-- Name: tbl_category_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
 --
 
-ALTER SEQUENCE public.tbl_category_cat_id_seq OWNED BY public.tbl_category.cat_id;
+ALTER SEQUENCE public.tbl_category_id_seq OWNED BY public.tbl_category.id;
 
 
 --
@@ -146,9 +146,10 @@ ALTER SEQUENCE public.tbl_cost_cost_id_seq OWNED BY public.tbl_cost.cost_id;
 CREATE TABLE public.tbl_inventory (
     id integer NOT NULL,
     grp_id integer,
+    cart_stock integer,
     shelved_stock integer,
     back_stock integer,
-    pending integer,
+    pending_stock integer,
     available date,
     sell_by date
 );
@@ -176,43 +177,6 @@ ALTER TABLE public.tbl_inventory_id_seq OWNER TO fatimakahbi;
 --
 
 ALTER SEQUENCE public.tbl_inventory_id_seq OWNED BY public.tbl_inventory.id;
-
-
---
--- Name: tbl_preference; Type: TABLE; Schema: public; Owner: fatimakahbi
---
-
-CREATE TABLE public.tbl_preference (
-    id integer NOT NULL,
-    shopper_id integer,
-    grp_id integer,
-    regular_roll double precision,
-    sale_roll double precision
-);
-
-
-ALTER TABLE public.tbl_preference OWNER TO fatimakahbi;
-
---
--- Name: tbl_preference_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
---
-
-CREATE SEQUENCE public.tbl_preference_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.tbl_preference_id_seq OWNER TO fatimakahbi;
-
---
--- Name: tbl_preference_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
---
-
-ALTER SEQUENCE public.tbl_preference_id_seq OWNED BY public.tbl_preference.id;
 
 
 --
@@ -421,10 +385,10 @@ ALTER TABLE ONLY public.tbl_cart ALTER COLUMN id SET DEFAULT nextval('public.tbl
 
 
 --
--- Name: tbl_category cat_id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+-- Name: tbl_category id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
 --
 
-ALTER TABLE ONLY public.tbl_category ALTER COLUMN cat_id SET DEFAULT nextval('public.tbl_category_cat_id_seq'::regclass);
+ALTER TABLE ONLY public.tbl_category ALTER COLUMN id SET DEFAULT nextval('public.tbl_category_id_seq'::regclass);
 
 
 --
@@ -439,13 +403,6 @@ ALTER TABLE ONLY public.tbl_cost ALTER COLUMN cost_id SET DEFAULT nextval('publi
 --
 
 ALTER TABLE ONLY public.tbl_inventory ALTER COLUMN id SET DEFAULT nextval('public.tbl_inventory_id_seq'::regclass);
-
-
---
--- Name: tbl_preference id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
---
-
-ALTER TABLE ONLY public.tbl_preference ALTER COLUMN id SET DEFAULT nextval('public.tbl_preference_id_seq'::regclass);
 
 
 --
@@ -495,12 +452,12 @@ COPY public.tbl_cart (id, shopper_id, inventory_id, grp_id) FROM stdin;
 -- Data for Name: tbl_category; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
 --
 
-COPY public.tbl_category (cat_id, category, coefficient) FROM stdin;
-1	meat	0.0200000000000000004
-2	produce	0.100000000000000006
-3	freezer	0.140000000000000013
-4	fridge	0.209999999999999992
-5	pantry	0.550000000000000044
+COPY public.tbl_category (id, category, count) FROM stdin;
+1	meat	4
+2	produce	2
+3	freezer	3
+4	fridge	2
+5	pantry	2
 \.
 
 
@@ -516,28 +473,20 @@ COPY public.tbl_cost (cost_id, stamp, value, ctype) FROM stdin;
 -- Data for Name: tbl_inventory; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
 --
 
-COPY public.tbl_inventory (id, grp_id, shelved_stock, back_stock, pending, available, sell_by) FROM stdin;
-1	1	100	0	0	2019-09-10	2019-09-30
-2	1	40	60	0	2019-09-10	2019-09-30
-3	1	0	100	0	2019-09-10	2019-09-30
-4	1	13	0	0	2019-09-10	2019-09-30
-5	2	10	0	0	2019-09-15	2019-10-09
-6	2	0	25	0	2019-09-16	2019-10-10
-7	4	8	0	0	2019-09-10	2019-10-10
-8	4	2	8	0	2019-09-10	2019-10-10
-9	3	0	50	0	2019-09-01	2019-09-14
-10	3	0	50	0	2019-09-01	2019-09-15
-11	3	0	50	0	2019-09-01	2019-09-18
-12	3	0	50	0	2019-09-01	2019-09-12
-13	3	48	0	0	2019-09-01	2019-09-10
-\.
-
-
---
--- Data for Name: tbl_preference; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
---
-
-COPY public.tbl_preference (id, shopper_id, grp_id, regular_roll, sale_roll) FROM stdin;
+COPY public.tbl_inventory (id, grp_id, cart_stock, shelved_stock, back_stock, pending_stock, available, sell_by) FROM stdin;
+1	1	0	100	0	0	2019-09-10	2019-09-30
+2	1	0	40	60	0	2019-09-10	2019-09-30
+3	1	0	0	100	0	2019-09-10	2019-09-30
+4	1	0	13	0	0	2019-09-10	2019-09-30
+5	2	0	10	0	0	2019-09-15	2019-10-09
+6	2	0	0	25	0	2019-09-16	2019-10-10
+7	4	0	8	0	0	2019-09-10	2019-10-10
+8	4	0	2	8	0	2019-09-10	2019-10-10
+9	3	0	0	50	0	2019-09-01	2019-09-14
+10	3	0	0	50	0	2019-09-01	2019-09-15
+11	3	0	0	50	0	2019-09-01	2019-09-18
+12	5	0	0	50	0	2019-09-01	2019-09-12
+13	3	0	48	0	0	2019-09-01	2019-09-10
 \.
 
 
@@ -609,10 +558,10 @@ SELECT pg_catalog.setval('public.tbl_cart_id_seq', 1, false);
 
 
 --
--- Name: tbl_category_cat_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+-- Name: tbl_category_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
 --
 
-SELECT pg_catalog.setval('public.tbl_category_cat_id_seq', 1, false);
+SELECT pg_catalog.setval('public.tbl_category_id_seq', 1, false);
 
 
 --
@@ -627,13 +576,6 @@ SELECT pg_catalog.setval('public.tbl_cost_cost_id_seq', 1, false);
 --
 
 SELECT pg_catalog.setval('public.tbl_inventory_id_seq', 14, false);
-
-
---
--- Name: tbl_preference_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
---
-
-SELECT pg_catalog.setval('public.tbl_preference_id_seq', 1, false);
 
 
 --
@@ -684,7 +626,7 @@ ALTER TABLE ONLY public.tbl_cart
 --
 
 ALTER TABLE ONLY public.tbl_category
-    ADD CONSTRAINT tbl_category_pkey PRIMARY KEY (cat_id);
+    ADD CONSTRAINT tbl_category_pkey PRIMARY KEY (id);
 
 
 --
@@ -701,14 +643,6 @@ ALTER TABLE ONLY public.tbl_cost
 
 ALTER TABLE ONLY public.tbl_inventory
     ADD CONSTRAINT tbl_inventory_pkey PRIMARY KEY (id);
-
-
---
--- Name: tbl_preference tbl_preference_pkey; Type: CONSTRAINT; Schema: public; Owner: fatimakahbi
---
-
-ALTER TABLE ONLY public.tbl_preference
-    ADD CONSTRAINT tbl_preference_pkey PRIMARY KEY (id);
 
 
 --
@@ -772,7 +706,7 @@ ALTER TABLE ONLY public.tbl_inventory
 --
 
 ALTER TABLE ONLY public.tbl_product
-    ADD CONSTRAINT fk1_prod FOREIGN KEY (category) REFERENCES public.tbl_category(cat_id);
+    ADD CONSTRAINT fk1_prod FOREIGN KEY (category) REFERENCES public.tbl_category(id);
 
 
 --

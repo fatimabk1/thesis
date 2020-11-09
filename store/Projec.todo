@@ -1,6 +1,7 @@
 - Category @done 
 - Price ENUM @done 
 - Product  
+    - setup() @done
     - order(self, n) @done 
     - generate_exp() @done
     - get_sublot_quantity() @done
@@ -10,7 +11,6 @@
     - get_price() @done 
     - get_popularity() @done
     - get_popularity_delta() @done 
-    - shell program for generating inital product list 
 - Inventory
     - decrement_n(self, n) @done
     - available_shelf_space(grp_id) OUTSIDE @done
@@ -24,3 +24,64 @@
     - toss_list() OUTSIDE @done
     - restock_list() OUTSIDE @done 
     - unload_list() OUTSIDE @done
+- Cart
+    - get_size(sid) @done
+    - get_total(sid) @done
+    - scan_n(sid, n) @done
+    - add_item(sid, grp_id) @done
+    - print_cart(sid) @done
+- Shopper
+    - inside @done
+        - random_start_min() @done
+        - random_quota() @done
+        - __repr__() @done
+        - get_status() @done 
+        - set_status() @done
+        - reset_browse() @done
+        - select_grp() @done
+    - floating
+        - step(sid, CLOCK, session) @done
+        - create(n, session) @done
+- Emp
+    - inside
+        - do_task()  # ask inventory to do task or do nothing and get paid ;)
+        - set_task(grp_id)  # refresh grp to-do
+        - get_task()
+        - set_role(role)  # work position 
+        - get_role()
+        - set_schedule(day, shift)  # emp.schedule[day] = shift ---> schedule will probably be another db table
+        - get_schedule(day)  # returns shift (A, B, off), where A & B hours are consant and known to system
+        - get_wage()
+    - floating
+        - get_employee(lid)  # assigns employee to CASHIER role / sets lane = lid
+        - return_employee(eid) # assign employee a new role / set lane = None
+        - swap_employee(eid, lid)
+        - make_schedule()
+        - step(eid)  
+            - validate(eid)  # returns true if employee has a valid role & valid task
+            - request_role()  # returns a role (according to priority for time of day + available tasks)
+            - request_task(role)  # returns a grp task for a non-CASHIER role
+                - next_toss()  # returns an unassigned grp for a TOSS role 
+                - next_unload()  # returns an unassigned grp for a UNLOAD role 
+                - next_restock()  # returns an unassigned grp for a RESTOCK role
+            - emp.do_task() 
+- Lane
+    - inside
+        - enq(sid)
+        - deq() --> sid
+        - set_emp(eid) [might not be neccessary anymore]
+        - validate_emp(eid)
+        - close()
+        - open()
+    - floating
+        - manage()
+            - shortest()
+            - collapse()
+            - expand()
+        - step()
+        - select_queue() [work on naming - OG was queue_shopper]
+- Simulator
+    - day
+    - month
+    - 
+- Report

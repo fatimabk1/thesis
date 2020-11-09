@@ -10,6 +10,13 @@
 PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 echo "Welcome to store simulator. 'r' runs the simulator, 'q' exits and 't' rebuilds the database"
+# echo "Please enter postgres database connection details:"
+# echo "host = "
+# read HOSTNAME
+# echo "port = "
+# read PORT 
+# echo "username = "
+# read USERNAME
 psql -c "CREATE DATABASE store;"  --output='/dev/null'
 python store/create_tables.py            # RELATIVE PATH --output='/dev/null'
 psql -c "\i store/db_init.sql"                                      # RELATIVE PATH
@@ -20,6 +27,7 @@ read COMMAND
 
 while true; do
 	if [ "$COMMAND" == "r" ];then
+        # python store/test_session.py
         python store/prog.py                                        # RELATIVE PATH
         psql -c "DROP DATABASE store;"
         psql -c "CREATE DATABASE store;"

@@ -1,13 +1,21 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event, inspect
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.pool import NullPool
 import contextlib
 from functools import wraps
 
 
-Engine = create_engine('postgresql://fatimakahbi:postgres@localhost:5432/store')
+my_conn_string = 'postgresql://fatimakahbi:postgres@localhost:5432/store'
+# conn_string = 'postgresql://{}:{}@{}:{}/store'\
+#     .format(os.environ["USER"],
+#             os.environ["PASSWORD"],
+#             os.environ["HOST"],
+#             os.environ["PORT"])
+Engine = create_engine(my_conn_string)
 # Session = sessionmaker(bind=Engine)
 Base = declarative_base()
+
 
 Session = scoped_session(
     sessionmaker(
@@ -16,12 +24,39 @@ Session = scoped_session(
 )
 
 
+def check_object_status(obj):
+    insp = inspect(obj)
+    if insp.transient:
+        print('transient')
+    elif insp.pending:
+        print('pending')
+    elif insp.persistent:
+        print('persistent')
+    elif insp.deleted:
+        print('deleted')
+    else:
+        assert(insp.detached)
+        print('detached')
+
+
+def check_session(session):
+    if session.dirty:
+        print("DIRTY -- objects to be updated in db")
+    elif session.new:
+        print("NEW -- new objects to add to db")
+    elif session.deleted:
+        print("DELETED -- objects to be deleted as from db")
+    else:
+        print("CLEAN -- clean session")
+
+
 @contextlib.contextmanager
 def create_session():
     """
     Contextmanager that will create and teardown a session.
     """
     session = Session()
+    # strong_reference_session(session)
     try:
         yield session
         session.commit()

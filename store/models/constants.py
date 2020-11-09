@@ -15,10 +15,8 @@ SATURDAY = 7
 NUM_DAYS = 7	 # 7 days in a week
 DAY_START = 10	 # store opens at 10:00 am
 
-# session = Session()
-# PRODUCT_COUNT  = session.query(product.grp_id).count()   # total # of products in db
-# CATEGORY_COUNT = session.query(category.cat_id).count()  # total # of categories in db
-# endSession(session)
+PRODUCT_COUNT = 20  # total # of products in db
+CATEGORY_COUNT = 5  # total # of categories in db
 
 
 MANAGE_FREQUENCY = 1  # manage() evaluates average lane qtime and qlen every MANAGE_FREQUENCY minutes
@@ -44,13 +42,13 @@ TOSS_MIN = 10
 TOSS_MAX = 30
 
 
-MAX_LANES = 30				# max possible lanes
+MAX_LANES = 30				    # max possible lanes
 MIN_LANES = 2					# num of open lanes at start
 
 HOURS_RUN = 1					# hours to run simulation
 RUN_TIME = HOURS_RUN * 60		# HOURS_RUN converted to minutes
 
 # initally min=10, max=50
-SHOPPER_MIN = 30				# min number of items a shopper will attempt to purchase
+SHOPPER_MIN = 1                 # min number of items a shopper will attempt to purchase
 SHOPPER_MAX = 30				# max number of items a shopper will attempt to purchase
 NUM_EMPLOYEES = 30

@@ -5,33 +5,37 @@ from models import Base
 class ModelRevenue(Base):
     __tablename__ = "tbl_revenue"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     stamp = Column(DateTime)
     value = Column(Float)
 
     def __repr__(self):
-        return "<Revenue(id='{}', timestamp='{}', value={})>"\
-            .format(self.rev_id, self.stamp, self.value)
+        return ["id",
+                "stamp",
+                "value"]
+
+    def print(self):
+        print("<Revenue_{}: timestamp='{}', value={}>"
+              .format(self.id, self.stamp, self.value))
 
 
 class ModelQtime(Base):
     __tablename__ = "tbl_qtime"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     lane = Column(Integer)
     stamp = Column(DateTime)
     time = Column(Integer)
 
     def __repr__(self):
-        return (
-            '''<queueTtme(id='{}', queue_num='{}', stamp ='{}',
-             time='{}')>'''
-            .format(
-                self.id,
-                self.lane,
-                self.stamp,
-                self.time)
-                )
+        return ["id",
+                "lane",
+                "stamp",
+                "time"]
+
+    def print(self):
+        print("<Qtime_{}: queue_num={}, stamp ={}, time={}>"
+              .format(self.id, self.lane, self.stamp, self.time))
 
 # class Employee(Base):
 #     __tablename__   = "employee"

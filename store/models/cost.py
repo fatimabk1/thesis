@@ -12,5 +12,11 @@ class ModelCost(Base):
     # ctype refers to cost type: "labor", "stock", or "overhead"
 
     def __repr__(self):
+        return ["id",
+                "stamp",
+                "value",
+                "ctype"]
+
+    def print(self):
         return "<Cost(id='{}', timestamp='{}', value={}, cost type={})>"\
             .format(self.cost_id, self.stamp, self.value, self.ctype)

@@ -1,6 +1,6 @@
-cat_id,category,coefficient
-1,meat,0.02
-2,produce,0.10
-3,freezer,0.14
-4,fridge,0.21
-5,pantry,0.55
+id,category,count
+1,meat,4
+2,produce,2
+3,freezer,3
+4,fridge,2
+5,pantry,2

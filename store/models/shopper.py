@@ -1,28 +1,20 @@
-from models.product import ModelProduct, choose_category
-from sqlalchemy import (Column,
-                        Integer,
-                        Float)
+from models.base import check_session, check_object_status
+from models.cart import ModelCart
+from models.product import ModelProduct, ModelCategory
+from sqlalchemy import (Column, Integer, Float)
 import random
-import time
 from datetime import date
 from enum import IntEnum
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql.schema import ForeignKey
-from sqlalchemy.sql import func
-from sqlalchemy import and_
 from tabulate import tabulate
 
 from models import (Base,
                     provide_session,
-                    ModelProduct,
-                    ModelInventory,
-                    ModelCategory,
                     ModelRevenue,
-                    ModelQtime,
-                    PRICE)
+                    ModelQtime)
 # CATEGORY_COUNT, SHOPPER_MIN, SHOPPER_MAX
 from models import constants as const
 from models import cart
+
 # random.seed(time.clock())
 CLOCK = const.CLOCK
 
@@ -30,29 +22,14 @@ CLOCK = const.CLOCK
 class Status(IntEnum):
     INERT = 0
     SHOPPING = 1
-    QUEUEING = 2
-    CHECKOUT = 3
-    DONE = 4
-
-
-class ModelPreference(Base):
-    __tablename__ = "tbl_preference"
-
-    id = Column(Integer, primary_key=True)
-    shopper_id = Column(Integer)
-    grp_id = Column(Integer)
-    regular_roll = Column(Float)
-    sale_roll = Column(Float)
-
-    def __repr__(self):
-        return [self.shopper_id,
-                self.grp_id,
-                self.regular_roll,
-                self.sale_roll]
+    QUEUE_READY = 2
+    QUEUEING = 3
+    CHECKOUT = 4
+    DONE = 5
 
 
 def random_start_min():
-    return random.randint(0, 60)
+    return random.randint(0, 59)
 
 
 def random_quota():
@@ -72,20 +49,47 @@ class ModelShopper(Base):
     status = Column(Integer, default=Status.INERT)
     total = Column(Float, default=0.00)
 
-    # START: setting defaults for postgres columns with python values
-    # and compiler thinking self.total is a None type and thus can't
-    # be put into the strin properly in __repr__ below
+    def print(self):
+        stat_string = ""
+        if self.status == 0:
+            stat_string = "INERT"
+        elif self.status == 1:
+            stat_string = "SHOPPING"
+        elif self.status == 2:
+            stat_string = "QUEUING"
+        elif self.status == 3:
+            stat_string = "CHECKOUT"
+        elif self.status == 4:
+            stat_string = "DONE"
+
+        return ("<shopper_{}_{}: start={}, browse={}, quota={}, cart={}, lane={}, qtime={}, total={}>"
+                .format(self.id, stat_string, self.start_min,
+                        self.browse_mins, self.quota, self.cart_count,
+                        self.lane, self.qtime, self.total))
 
     def __repr__(self):
+        stat_string = ""
+        if self.status == 0:
+            stat_string = "INERT"
+        elif self.status == 1:
+            stat_string = "SHOPPING"
+        elif self.status == 2:
+            stat_string = "QUEUING"
+        elif self.status == 3:
+            stat_string = "CHECKOUT"
+        elif self.status == 4:
+            stat_string = "DONE"
+
         return [self.id,
+                stat_string,
                 self.start_min,
                 self.browse_mins,
                 self.quota,
                 self.cart_count,
-                self.lane,
+                "n/a",
+                # self.lane,
                 self.qtime,
-                self.total,
-                repr(self.status)]
+                self.total]
 
     def get_status(self):
         return self.status
@@ -95,86 +99,81 @@ class ModelShopper(Base):
 
     def reset_browse(self):
         if const.EOD_FLAG is True:
-            self.browse_mins = random.randint(1, 4)
+            self.browse_mins = random.randint(1, 3)
         else:
-            self.browse_mins = random.randint(1, 7)
+            self.browse_mins = random.randint(2, 5)
 
-    # sample randomly (between 0.01 and 0.99) from distribution
-    @provide_session
-    def roll(self, grp_id, product, session=None):
-        pref = session.query(ModelPreference)\
-            .filter(and_(ModelPreference.shopper_id == self.id,
-                         ModelPreference.grp_id == grp_id)).one_or_none()
-        if pref is None:
-            reg = round(random.random(), 2)
-            sale = round(random.uniform(0, 1-reg) % reg, 2)
-            pref = ModelPreference(
-                shopper_id=self.id,
-                grp_id=grp_id,
-                regular_roll=reg,
-                sale_roll=sale)
-            session.add(pref)
-            session.commit()
-        return pref
-
-    @provide_session
     def select_grp(self, session=None):
-        category = choose_category()
+        cat = random.randint(1, const.CATEGORY_COUNT)
+        category = session.query(ModelCategory)\
+            .filter(ModelCategory.id == cat).one()
+        r = random.randint(1, category.product_count()) - 1
+        prod = session.query(ModelProduct)\
+            .filter(ModelProduct.category == cat).all()
+        prod = prod[r]
+        cart.add_item(self.id, prod.grp_id, session)
+        # print("\t\tgrp = {}, cart = {}"
+        #       .format(prod.grp_id, cart.get_size(self.id)))
 
-        while True:
-            prod = session.query(ModelProduct)\
-                .filter(ModelProduct.category == category)\
-                .order_by(func.random()).first()
-            pref = self.roll(prod.grp_id, session)
-            if prod.choose(pref.regular_roll, pref.sale_roll) is True:
-                cart.add_item(self.id, prod.grp_id, session)
-                break
-        return pref
+    def increment_qtime(self, session=None):
+        self.qtime += 1
+        session.commit()
 
-    # START HERE
-    @provide_session
-    def advance(self, session=None):
-        # def advance(self, laneManager, session=None):
-        if self.status == Status.INERT:
-            if CLOCK.minute == self.start_min:
-                print("\nINERT_ready")
-                self.status = Status.SHOPPING
-                self.reset_browse()
-            print("\nINERT_waiting")
-        elif self.status == Status.SHOPPING:
-            # done shopping
-            if self.quota == 0:
-                print("\nSHOPPING_complete")
-                self.total = cart.get_total(self.id, session)
-                self.cart_count = cart.get_size(self.id, session)
-                self.status = Status.QUEUEING
-                # laneManager.enq(self)  # TEST when LaneManager is done
-            # continue shopping
-            else:
-                if self.browse_mins == 0:
-                    print("\nSHOPPING_choose")
-                    self.select_grp(session)
-                    self.quota -= 1
-                    self.reset_browse()
-                else:
-                    print("\nSHOPPING_browse")
-                    self.browse_mins -= 1
-        elif self.status == Status.DONE:
-            print("DONE")
-            assert(self.status == Status.DONE)
-            today = date(CLOCK.year, CLOCK.month, CLOCK.day)
-            rev = ModelRevenue(
-                stamp=today,
-                value=self.total)
-            session.add(rev)
-            qt = ModelQtime(
-                lane=self.lane,
-                stamp=today,
-                time=self.qtime)
-            session.add(qt)
-            session.commit()
+    def set_lane(self, lid):
+        self.lane = lid
+
+
+def create(n, session=None):
+    for i in range(n):
+        s = ModelShopper()
+        session.add(s)
+    session.commit()
+
+
+@provide_session
+def step(sid, CLOCK, session=None):
+    shopper = session.query(ModelShopper)\
+        .filter(ModelShopper.id == sid).one()
+
+    if shopper.status == Status.INERT and CLOCK.minute == shopper.start_min:
+        shopper.status = Status.SHOPPING
+        shopper.reset_browse()
+
+    elif shopper.status == Status.SHOPPING:
+
+        # done shopping
+        if shopper.quota == 0:
+            shopper.total = cart.get_total(shopper.id, session)
+            shopper.status = Status.QUEUE_READY
+            shopper.qtime = 0
+
+        # select grp or keep browsing
         else:
-            print("QUEUEING_or_CHECKOUT")
-            assert(self.status == Status.QUEUEING
-                   or self.status == Status.CHECKOUT)
-            pass  # handled by lane manager
+            if shopper.browse_mins == 1:
+                shopper.select_grp(session)
+                shopper.quota -= 1
+                shopper.reset_browse()
+            else:
+                shopper.browse_mins -= 1
+
+        shopper.cart_count = cart.get_size(shopper.id, session)
+
+    elif shopper.status == Status.DONE:
+        today = date(CLOCK.year, CLOCK.month, CLOCK.day)
+
+        rev = ModelRevenue(
+            stamp=today,
+            value=shopper.total)
+        session.add(rev)
+
+        qt = ModelQtime(
+            lane=shopper.lane,
+            stamp=today,
+            time=shopper.qtime)
+        session.add(qt)
+
+    else:
+        pass
+
+    session.commit()
+    return shopper.status

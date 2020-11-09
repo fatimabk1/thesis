@@ -17,38 +17,24 @@ CLOCK = const.CLOCK
 class ModelCategory(Base):
     __tablename__ = "tbl_category"
 
-    cat_id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)
     category = Column(String(50))
-    coefficient = Column(Float)
+    count = Column(Integer)  # number of products in this category
 
     def __repr__(self):
-        if self.cat_id == 1:
+        if self.id == 1:
             return "frozen"
-        elif self.cat_id == 2:
+        elif self.id == 2:
             return "fridge"
-        elif self.cat_id == 3:
+        elif self.id == 3:
             return "pantry"
-        elif self.cat_id == 4:
+        elif self.id == 4:
             return "pet"
         else:
             return "meat"
 
-
-def choose_category():
-    # select a category according to distribution
-    r = round(random.random(), 2)
-    start = 0.02
-    if r < start:
-        category = 1
-    elif r < start + 0.10:
-        category = 2
-    elif r < start + 0.10 + 0.14:
-        category = 3
-    elif r < start + 0.10 + 0.14 + 0.21:
-        category = 4
-    else:
-        category = 5
-    return category
+    def product_count(self):
+        return self.count
 
 
 class ModelSold(Base):
@@ -114,17 +100,6 @@ class ModelProduct(Base):
             return self.popularity
         else:
             return self.popularity - self.popularity_delta
-  
-    def choose(self, reg_pref, sale_pref):
-        if (self.price_status == PRICE.regular and
-                reg_pref < self.popularity):
-            return True
-        elif (self.price_status == PRICE.sale and
-                reg_pref - sale_pref <
-                self.popularity + self.popularity_delta):
-            return True
-        else:
-            return False
 
     def get_max_back_stock(self):
         return self.max_back_stock
@@ -144,7 +119,6 @@ class ModelProduct(Base):
     def set_regular(self):
         self.price_status = PRICE.regular
 
-    @provide_session
     def set_threshold(self, session=None):
         '''
         Sets the minimum amount of product to keep in stock.
@@ -186,11 +160,10 @@ class ModelProduct(Base):
                 self.lot_quantity,
                 ]
 
-    @provide_session
     def row_basic_info(self, session=None):
-        cat = session.query(ModelCategory)\
-            .filter(ModelCategory.cat_id == self.category).first()
-
+        category = session.query(ModelCategory)\
+            .filter(ModelCategory.id == self.category).first()
+        cat = category.__repr__()
         return [self.grp_id,
                 cat,
                 self.price_status,

@@ -1,7 +1,8 @@
+from models.base import check_session, check_object_status
 from sqlalchemy import Column, Integer, func
 from tabulate import tabulate
 from models import inventory
-from models import Base, provide_session, ModelProduct
+from models import Base, provide_session, ModelProduct, Session
 
 
 class ModelCart(Base):
@@ -12,30 +13,41 @@ class ModelCart(Base):
     inventory_id = Column(Integer)
     grp_id = Column(Integer)
 
-    @provide_session
-    def __repr__(self, session):
-        info = session.query(ModelProduct.name, ModelProduct.brand)\
+    def print(self):
+        print("<item_{}: sid={}, inv={}, grp={}>"
+              .format(self.id,
+                      self.shopper_id,
+                      self.inventory_id,
+                      self.grp_id))
+
+    def __repr__(self, session=None):
+        prod = session.query(ModelProduct)\
             .filter(ModelProduct.grp_id == self.grp_id).one()
-        return [self.id,
+        return [self.shopper_id,
+                self.id,
                 self.grp_id,
                 self.inventory_id,
-                info.name,
-                info.brand]
+                prod.name,
+                prod.brand]
 
 
-@provide_session
 def print_cart(sid, session=None):
+    # collect cart info
     tot = get_total(sid, session)
     size = get_size(sid, session)
     cart = session.query(ModelCart)\
-        .filter(ModelProduct.shopper_id == sid).all()
+        .filter(ModelCart.shopper_id == sid).all()
 
     table = []
     for item in cart:
-        table.append(item.__repr__())
-    print("\n-------------------- CART_{}: total = {}, size = {} -------------------"
+        table.append(item.__repr__(session))
+
+    # print cart
+    print("\n---------- CART_{}: total = {}, size = {} ------------"
           .format(sid, tot, size))
-    headers = ["item_id",
+    # print("\n-------------------- CART_{} -------------------".format(sid))
+    headers = ["sid",
+               "item_no",
                "product",
                "inv_id",
                "name",
@@ -43,46 +55,64 @@ def print_cart(sid, session=None):
     print(tabulate(table, headers, tablefmt="fancy_grid"))
 
 
-@provide_session
 def add_item(sid, grp_id, session=None):
     inv_id = inventory.select_inv(grp_id, session)
     row = ModelCart(
         shopper_id=sid,
-        inventory_id=inv_id
+        inventory_id=inv_id,
+        grp_id=grp_id
     )
     session.add(row)
     session.commit()
 
 
-@provide_session
 def scan_n(sid, n, session=None):
+    print("in scan_n")
+    # print_cart(sid, session)
+    # print("starting to scan")
     cart_list = session.query(ModelCart)\
         .filter(ModelCart.shopper_id == sid)\
         .order_by(ModelCart.id).all()
+
     for row in cart_list:
+        check_object_status(row)
         if n == 0:
+            print("n = {}".format(n))
             break
         session.delete(row)
+        check_object_status(row)
+        check_session(session)
         n -= 1
-    session.commit()
+        session.commit()
+    print("end of scan_n")
+    return n
 
 
-@provide_session
 def get_size(sid, session=None):
-    size = session.query(func.count(ModelCart))\
-        .filter(ModelCart.shopper_id == sid).one()[0]
-    if size is None:
-        size = 0
-    return size
+    count = session.query(func.count(ModelCart.id))\
+        .filter(ModelCart.shopper_id == sid).one_or_none()
+    if count:
+        return count[0]
+    else:
+        return 0
 
 
-@provide_session
 def get_total(sid, session=None):
     cart = session.query(ModelCart)\
         .filter(ModelCart.shopper_id == sid).all()
+    print("get_total session = ", session)
     total = 0
-    for item in cart:
-        product = session.query(ModelProduct)\
-            .filter(ModelProduct.grp_id == item.grp_id).one()
-        total += product.get_price()
-    return total
+    if cart:
+        table = []
+        for item in cart:
+            table.append(item.__repr__(session))
+            product = session.query(ModelProduct)\
+                .filter(ModelProduct.grp_id == item.grp_id).one()
+            # table.append(product.row_basic_info(session))
+            total += product.get_price()
+        # prod_headers = ["grp", "cat", "p-stat",
+        #                 "reg", "sale", "pop", "pop∆"]
+        item_headers = ["sid", "item_no", "product",
+                        "inv_id", "name", "brand"]
+        print(tabulate(table, headers=item_headers))
+    return round(total, 2)
