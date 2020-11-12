@@ -1,6 +1,12 @@
 from datetime import datetime
-from models import shopper, lane, employee
-from models import ModelShopper, ModelEmployee, ModelLane, Status
+from models import shopper, lane, employee, inventory, const
+from models import (ModelShopper,
+                    ModelEmployee,
+                    ModelLane,
+                    Status,
+                    Role,
+                    Shift,
+                    Schedule)
 from models import provide_session
 import sys
 
@@ -13,7 +19,7 @@ def day(steps, session=None):
             # num_shoppers = something based on busyness
             shopper.create(1)
 
-        # advance shoppers
+        # -------------------------------------------------- advance shoppers
         group = session.query(ModelShopper.id).all()
         if group:
             for sid in group:
@@ -34,38 +40,16 @@ def day(steps, session=None):
                         session.delete(s)
                     session.commit()
 
-        # advance lanes
-        lane.manage()  # open/close/etc
+        # -------------------------------------------------- advance lanes
+        lane.manage(session)  # open/close/etc
         group = session.query(ModelLane.id).all()
         for lid in group:
             lane.step(lid)
 
-        # advance employees
-        unload_list = Inventory.unload_list()
-        restock_list = Inventory.restock_list()
-        toss_list = Inventory.toss_list()
-        group = session.query(ModelEmployee.id).all()
-        for eid in group:
-            if employee.valid_task(eid) is True:
-                employee.step(eid)
-            else:
-                emp = session.query(ModelEmployee)\
-                    .filter(ModelEmployee.id == eid).one()
-                if emp.get_role() is CASHIER:  # where get_task() returns the employee's currently listed role
-                    sys.exit("FATAL: employee should not have an invalid cashier role")
-                    employee.switch_role(eid)
-                    switch_to_alt(employee.employee_id)
-                else:
-                    grp = refresh_shift(employee.shift):  # MAKE SEPARATE FUNC; get new task for E shift
-                    if grp is not None:
-                        employee.set_grp(grp)
-                        employee.advance()
-                    else:  # nothing to do in this shift
-                        switch_to_alt(employee.employee_id) 
-                        employee.advance()
-            employee.step()
-
-
-
-
-
+        # -------------------------------------------------- advance employees
+        employee.prepare_employees(session)
+        group = session.query(ModelEmployee)\
+            .filter(ModelEmployee.role != Role.CASHIER,
+                    ModelEmployee.role != Role.IDLE).all()
+        for emp in group:
+            emp.do_task(session)

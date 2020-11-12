@@ -39,32 +39,27 @@
         - set_status() @done
         - reset_browse() @done
         - select_grp() @done
-    - floating
+    - floating @done
         - step(sid, CLOCK, session) @done
         - create(n, session) @done
 - Emp
     - inside
-        - do_task()  # ask inventory to do task or do nothing and get paid ;)
-        - set_task(grp_id)  # refresh grp to-do
-        - get_task()
-        - set_role(role)  # work position 
-        - get_role()
-        - set_schedule(day, shift)  # emp.schedule[day] = shift ---> schedule will probably be another db table
-        - get_schedule(day)  # returns shift (A, B, off), where A & B hours are consant and known to system
-        - get_wage()
+        - do_task()  @done
+        - set_task(grp_id)  @done
+        - get_task() @done
+        - set_role(role)  @done
+        - get_role() @done
+        - get_checkout_speed() @done
+        - get_stock_speed() @done
+        - get_schedule(day)  @done
+        - calculate_wage() @done
     - floating
-        - get_employee(lid)  # assigns employee to CASHIER role / sets lane = lid
-        - return_employee(eid) # assign employee a new role / set lane = None
-        - swap_employee(eid, lid)
-        - make_schedule()
-        - step(eid)  
-            - validate(eid)  # returns true if employee has a valid role & valid task
-            - request_role()  # returns a role (according to priority for time of day + available tasks)
-            - request_task(role)  # returns a grp task for a non-CASHIER role
-                - next_toss()  # returns an unassigned grp for a TOSS role 
-                - next_unload()  # returns an unassigned grp for a UNLOAD role 
-                - next_restock()  # returns an unassigned grp for a RESTOCK role
-            - emp.do_task() 
+        - get_employee(lid)  @done
+        - return_employee(eid) @done
+        - swap_employee(eid, lid) @done
+        - make_schedule() @done
+        - set_schedule(day, session) @done
+        - prepare_employees(session)  @done 
 - Lane
     - inside
         - enq(sid)

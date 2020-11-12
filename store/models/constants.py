@@ -34,12 +34,10 @@ RESTOCK_THRESHOLD = 100  # if shelved_stock falls below this value, restock from
 # ------------------------------------------------------------------------------------------------ PARAMATERS
 CHECKOUT_MIN = 2
 CHECKOUT_MAX = 5
-RESTOCK_MIN = 20  # this group of paramaters set the speed restraints for checking out, restocking, etc.		 
-RESTOCK_MAX = 50
-UNLOAD_MIN = 10
+RESTOCK_MIN = 40  # this group of paramaters set the speed restraints for checking out, restocking, etc.		 
+RESTOCK_MAX = 100
+UNLOAD_MIN = 10  # in terms of lots
 UNLOAD_MAX = 30
-TOSS_MIN = 10
-TOSS_MAX = 30
 
 
 MAX_LANES = 30				    # max possible lanes
