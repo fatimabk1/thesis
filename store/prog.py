@@ -1,18 +1,15 @@
 # a program to test the product.py file
-from models.base import check_session, check_object_status
-from datetime import datetime, timedelta
-from models.some_models import ModelRevenue, ModelQtime
+from datetime import timedelta
 from sqlalchemy import func
 from tabulate import tabulate
-import time
 
-from models import ModelShopper, ModelProduct, ModelInventory
-from models import const,  shopper, Status, provide_session, Session
+from models.base import check_session, check_object_status
+from models.some_models import ModelRevenue, ModelQtime
+from models.employee import Day, Role, Shift
 
-# order_inventory, restock_list, select_inv,\
-# # toss_list, unload_list, restock, unload, create_pending
-from models import cart
-from models import inventory
+from models import ModelShopper, ModelProduct, ModelInventory, ModelEmployee
+from models import Status, provide_session, Session
+from models import cart, inventory, shopper, const, employee
 
 
 CLOCK = const.CLOCK
@@ -29,20 +26,20 @@ def initialize(session=None):
 
     # inital inventory order
     inventory.order_inventory(session)
-    lst = inventory.unload_list(session)
-    while lst:
-        for grp in lst:
-            inventory.unload(grp, session)
-        lst = inventory.unload_list(session)
-        # print("Remaining Unloads:", lst)
+    # lst = inventory.unload_list(session)
+    # while lst:
+    #     for grp in lst:
+    #         inventory.unload(grp, session)
+    #     lst = inventory.unload_list(session)
+    #     # print("Remaining Unloads:", lst)
 
-    # initial restock
-    lst = inventory.restock_list(session)
-    while lst:
-        for grp in lst:
-            inventory.restock(grp, 1000, session)
-            lst = inventory.restock_list(session)
-            # print("Remaining Restocks:", lst)
+    # # initial restock
+    # lst = inventory.restock_list(session)
+    # while lst:
+    #     for grp in lst:
+    #         inventory.restock(grp, 1000, session)
+    #         lst = inventory.restock_list(session)
+    #         # print("Remaining Restocks:", lst)
 
     session.commit()
 
@@ -126,7 +123,125 @@ def advance_all_shoppers(CLOCK, session=None):
     session.close()
 
 
+def advance_all_employees(CLOCK):
+    # EXECUTE
+    session = Session()
+    print("\nCREATING EMPLOYEES & BLANK SCHEDULES")
+    for i in range(30):
+        employee.create_employee(session)
+    session.commit()
+    session.close()
+
+    # VALIDATE
+    session = Session()
+    emp_lst = session.query(ModelEmployee).all()
+    print("confirming employee list...")
+    for emp in emp_lst:
+        emp.print()
+    print("--------------- SCHEDULE ---------------")
+    print("confirming blank schedule...")
+    employee.print_full_schedule(session)
+    session.commit()
+    session.close()
+
+    # EXECUTE
+    session = Session()
+    print("\nMAKING WEEK SCHEDULE")
+    # consider making schedule a separate file
+    employee.make_week_schedule(session)
+    session.commit()
+    session.close
+
+    # VALIDATE
+    session = Session()
+    print("confirming full schedule...")
+    employee.print_full_schedule(session)
+    session.commit()
+    session.close()
+
+    # EXECUTE
+    session = Session()
+    day = Day.SUNDAY
+    print("\nSET EMPLOYEE'S DAY SCHEDULE")
+    employee.set_day_schedule(day, session)
+    session.commit()
+    session.close()
+
+    # VALIDATE
+    print("confirming employee's day schedule..")
+    session = Session()
+    emp_lst = session.query(ModelEmployee).all()
+    for emp in emp_lst:
+        emp.print()
+    session.commit()
+    session.close()
+
+    # 10 time steps
+    for i in range(10):
+        print("------------------------------------------------------------------------------------------ TIME STEP {}".format(i))
+
+        # EXECUTE
+        print("\nPREPARING EMPLOYEE ROLE & TASK")
+        session = Session()
+        employee.prepare_employees(Shift.MORNING, session)
+        session.commit()
+        session.close()
+
+        # VALIDATE
+        print("\nconfirming employee role & task:")
+        session = Session()
+        emp_lst = session.query(ModelEmployee)\
+            .filter(ModelEmployee.shift == Shift.MORNING).all()
+        for emp in emp_lst:
+            emp.print()
+        session.commit()
+        session.close()
+
+        # EXECUTE
+        session = Session()
+        emp_lst = session.query(ModelEmployee)\
+            .filter(ModelEmployee.shift == Shift.MORNING).all()
+        print("\nDOING TASKS")
+        for emp in emp_lst:
+            print("employee {} - confirming task completion...".format(emp.id))
+            emp.do_task(session)
+            emp.increment_time_worked()
+        session.commit()
+        session.close()
+
+        # test a CASHIER employee for two cycles
+        if i == 5:
+            session = Session()
+            print("\nSETTING EMP # 12 TO CASHIER")
+            emp = session.query(ModelEmployee)\
+                .filter(ModelEmployee.id == 12).one()
+            emp.set_role_and_task(Role.CASHIER, None)
+            session.commit()
+            session.close()
+
+        if i == 8:
+            session = Session()
+            print("\nSETTING EMP # 12 TO IDLE")
+            emp = session.query(ModelEmployee)\
+                .filter(ModelEmployee.id == 12).one()
+            emp.set_role_and_task(Role.IDLE, None)
+            session.commit()
+            session.close()
+        session.commit()
+        session.close()
+        CLOCK += timedelta(minutes=1)
+
+    session.commit()
+
+
 if __name__ == "__main__":
     initialize()
-    advance_all_shoppers(CLOCK)
+    advance_all_employees(const.CLOCK)
+    print("\nPaying my amazing employees:")
+    session = Session()
+    emp_lst = session.query(ModelEmployee).all()
+    emp_lst.sort(key=lambda x: x.id)
+    for emp in emp_lst:
+        print("Employee {}: {:.2f}".format(emp.id, emp.calculate_wages()))
+    session.close()
     print("Good Job!")

@@ -7,7 +7,7 @@ from models import (ModelShopper,
                     Role,
                     Shift,
                     Schedule)
-from models import provide_session
+from models.base import provide_session, Session
 import sys
 
 
@@ -15,6 +15,9 @@ import sys
 @provide_session
 def day(steps, session=None): 
     for i in range(steps):
+        if i == 0:
+            employee.set_day_schedule(day, session)
+
         if i % 60 == 0:
             # num_shoppers = something based on busyness
             shopper.create(1)
@@ -53,3 +56,17 @@ def day(steps, session=None):
                     ModelEmployee.role != Role.IDLE).all()
         for emp in group:
             emp.do_task(session)
+
+
+def run():
+    # overall setup
+    session = Session()
+    for i in range(const.NUM_EMPLOYEES):
+        employee.create_employee(session)
+    employee.make_week_schedule(session)
+    session.close()
+
+    for i in range(const.NUM_DAYS):
+        day()
+
+    session.close()

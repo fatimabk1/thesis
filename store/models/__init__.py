@@ -8,6 +8,6 @@ from models.product import ModelProduct, ModelCategory, PRICE
 from models.inventory import ModelInventory
 from models.cart import ModelCart
 from models.shopper import ModelShopper, Status
-from models.employee import Role, Shift, Schedule, Day
+from models.employee import Role, Shift, Day, ModelSchedule, ModelEmployee
 
 from models import shopper, cart, inventory, product, employee

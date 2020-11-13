@@ -1,5 +1,5 @@
-from datetime import datetime
-CLOCK = datetime(2019, 9, 15, 10, 0)
+from datetime import datetime, time
+CLOCK = datetime(2019, 9, 15, 9, 0)
 TRUCK_DAYS = 0  # initally 3
 EOD_FLAG = False
 
@@ -34,8 +34,8 @@ RESTOCK_THRESHOLD = 100  # if shelved_stock falls below this value, restock from
 # ------------------------------------------------------------------------------------------------ PARAMATERS
 CHECKOUT_MIN = 2
 CHECKOUT_MAX = 5
-RESTOCK_MIN = 40  # this group of paramaters set the speed restraints for checking out, restocking, etc.		 
-RESTOCK_MAX = 100
+STOCK_MIN = 40  # this group of paramaters set the speed restraints for checking out, restocking, etc.		 
+STOCK_MAX = 100
 UNLOAD_MIN = 10  # in terms of lots
 UNLOAD_MAX = 30
 
@@ -50,3 +50,29 @@ RUN_TIME = HOURS_RUN * 60		# HOURS_RUN converted to minutes
 SHOPPER_MIN = 1                 # min number of items a shopper will attempt to purchase
 SHOPPER_MAX = 30				# max number of items a shopper will attempt to purchase
 NUM_EMPLOYEES = 30
+
+
+WAGE_MIN = 8
+WAGE_MAX = 18
+
+
+def store_before(clock):
+    if time(clock.hour, clock.minute) < time(10, 0):
+        return True
+    else:
+        return False
+
+
+def store_open(clock):
+    if (time(clock.hour, clock.minute) >= time(10, 0) and
+            time(clock.hour, clock.minute) < time(8, 0)):
+        return True
+    else:
+        return False
+
+
+def store_closed(clock):
+    if time(clock.hour, clock.minute) >= time(8,0):
+        return True
+    else:
+        return False

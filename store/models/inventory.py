@@ -239,10 +239,10 @@ def toss_list(session=None):
     today = date(CLOCK.year, CLOCK.month, CLOCK.day)
     lst = session.query(distinct(ModelInventory.grp_id))\
         .filter(ModelInventory.sell_by <= today).all()
-    inv_lst = []
-    for row in lst:
-        if row[0] is not None:
-            inv_lst.append(row[0])
+    inv_lst = [item for sublist in lst for item in sublist]
+    # for row in lst:
+    #     if row[0] is not None:
+    #         inv_lst.append(row[0])
     return inv_lst
 
 
@@ -276,8 +276,8 @@ def unload_list(session=None):
     lst = session.query(ModelInventory.grp_id)\
         .filter(ModelInventory.available == today)\
         .filter(ModelInventory.pending_stock > 0).distinct()
-    inv_list = []
-    for row in lst:
-        if row[0] is not None:
-            inv_list.append(row[0])
+    inv_list = [item for sublist in lst for item in sublist]
+    # for row in lst:
+    #     if row[0] is not None:
+    #         inv_list.append(row[0])
     return inv_list

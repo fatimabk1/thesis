@@ -140,6 +140,48 @@ ALTER SEQUENCE public.tbl_cost_cost_id_seq OWNED BY public.tbl_cost.cost_id;
 
 
 --
+-- Name: tbl_employee; Type: TABLE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE TABLE public.tbl_employee (
+    id integer NOT NULL,
+    shift integer,
+    role integer,
+    task integer,
+    lane integer,
+    checkout_speed integer,
+    stock_speed integer,
+    unload_speed integer,
+    hourly_wage integer,
+    time_worked integer
+);
+
+
+ALTER TABLE public.tbl_employee OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_employee_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.tbl_employee_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tbl_employee_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_employee_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.tbl_employee_id_seq OWNED BY public.tbl_employee.id;
+
+
+--
 -- Name: tbl_inventory; Type: TABLE; Schema: public; Owner: fatimakahbi
 --
 
@@ -301,6 +343,42 @@ ALTER SEQUENCE public.tbl_revenue_id_seq OWNED BY public.tbl_revenue.id;
 
 
 --
+-- Name: tbl_schedule; Type: TABLE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE TABLE public.tbl_schedule (
+    id integer NOT NULL,
+    employee_id integer,
+    day integer,
+    shift integer
+);
+
+
+ALTER TABLE public.tbl_schedule OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_schedule_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.tbl_schedule_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tbl_schedule_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_schedule_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.tbl_schedule_id_seq OWNED BY public.tbl_schedule.id;
+
+
+--
 -- Name: tbl_shopper; Type: TABLE; Schema: public; Owner: fatimakahbi
 --
 
@@ -399,6 +477,13 @@ ALTER TABLE ONLY public.tbl_cost ALTER COLUMN cost_id SET DEFAULT nextval('publi
 
 
 --
+-- Name: tbl_employee id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_employee ALTER COLUMN id SET DEFAULT nextval('public.tbl_employee_id_seq'::regclass);
+
+
+--
 -- Name: tbl_inventory id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
 --
 
@@ -424,6 +509,13 @@ ALTER TABLE ONLY public.tbl_qtime ALTER COLUMN id SET DEFAULT nextval('public.tb
 --
 
 ALTER TABLE ONLY public.tbl_revenue ALTER COLUMN id SET DEFAULT nextval('public.tbl_revenue_id_seq'::regclass);
+
+
+--
+-- Name: tbl_schedule id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_schedule ALTER COLUMN id SET DEFAULT nextval('public.tbl_schedule_id_seq'::regclass);
 
 
 --
@@ -466,6 +558,14 @@ COPY public.tbl_category (id, category, count) FROM stdin;
 --
 
 COPY public.tbl_cost (cost_id, stamp, value, ctype) FROM stdin;
+\.
+
+
+--
+-- Data for Name: tbl_employee; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
+--
+
+COPY public.tbl_employee (id, shift, role, task, lane, checkout_speed, stock_speed, unload_speed, hourly_wage, time_worked) FROM stdin;
 \.
 
 
@@ -535,6 +635,14 @@ COPY public.tbl_revenue (id, stamp, value) FROM stdin;
 
 
 --
+-- Data for Name: tbl_schedule; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
+--
+
+COPY public.tbl_schedule (id, employee_id, day, shift) FROM stdin;
+\.
+
+
+--
 -- Data for Name: tbl_shopper; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
 --
 
@@ -572,6 +680,13 @@ SELECT pg_catalog.setval('public.tbl_cost_cost_id_seq', 1, false);
 
 
 --
+-- Name: tbl_employee_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.tbl_employee_id_seq', 1, false);
+
+
+--
 -- Name: tbl_inventory_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
 --
 
@@ -597,6 +712,13 @@ SELECT pg_catalog.setval('public.tbl_qtime_id_seq', 1, false);
 --
 
 SELECT pg_catalog.setval('public.tbl_revenue_id_seq', 1, false);
+
+
+--
+-- Name: tbl_schedule_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.tbl_schedule_id_seq', 1, false);
 
 
 --
@@ -638,6 +760,14 @@ ALTER TABLE ONLY public.tbl_cost
 
 
 --
+-- Name: tbl_employee tbl_employee_pkey; Type: CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_employee
+    ADD CONSTRAINT tbl_employee_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: tbl_inventory tbl_inventory_pkey; Type: CONSTRAINT; Schema: public; Owner: fatimakahbi
 --
 
@@ -667,6 +797,14 @@ ALTER TABLE ONLY public.tbl_qtime
 
 ALTER TABLE ONLY public.tbl_revenue
     ADD CONSTRAINT tbl_revenue_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tbl_schedule tbl_schedule_pkey; Type: CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_schedule
+    ADD CONSTRAINT tbl_schedule_pkey PRIMARY KEY (id);
 
 
 --
