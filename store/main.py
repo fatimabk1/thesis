@@ -11,13 +11,14 @@ from models.base import provide_session, Session
 import sys
 
 
-# steps for now, later it will be the set # of minutes in a day
+# steps for now, later it will be the constant # of minutes in a day
 @provide_session
-def day(steps, session=None): 
-    for i in range(steps):
-        if i == 0:
-            Employee.set_day_schedule(day, session)
+def day(lanes, session=None):
+    steps = 30
+    open_lanes = 0
+    Employee.set_day_schedule(day, session)
 
+    for i in range(steps):
         if i % 60 == 0:
             # num_shoppers = something based on busyness
             Shopper.create(1)
@@ -35,7 +36,7 @@ def day(steps, session=None):
                     assert(s.status == stat)
 
                     if stat is Status.QUEUE_READY:
-                        Lane.enque(sid)  # CHECK if we should pass a session
+                        Lane.queue_shopper(sid, lanes, open_lanes)  # CHECK if we should pass a session
                         s.set_status(Status.QUEUEING)
                     elif stat is Status.QUEUEING:
                         Shopper.increment_qtime(sid, session)
@@ -44,12 +45,13 @@ def day(steps, session=None):
                     session.commit()
 
         # -------------------------------------------------- advance lanes
-        Lane.manage(session)  # open/close/etc
-        group = session.query(ModelLane.id).all()
+        open_lanes = Lane.manage(lanes, open_lanes)  # expand & open -OR- collapse
         if Const.shift_change(Const.CLOCK):
             Lane.shift_change(session)
-        for lid in group:
-            Lane.step(lid)
+        for index, ln in enumerate(lanes):
+            if index >= open_lanes and ln.length == 0:
+                ln.close()  # test if values persist -- may need to pass a session to return employee
+            ln.step(session)
 
         # -------------------------------------------------- advance employees
         Employee.prepare_employees(session)
@@ -60,15 +62,32 @@ def day(steps, session=None):
             emp.do_task(session)
 
 
-def run():
-    # overall setup
-    session = Session()
+@provide_session
+def setup(session=None):
+    # create & schedule employees
     for i in range(Const.NUM_EMPLOYEES):
         Employee.create_employee(session)
     Employee.make_week_schedule(session)
-    session.close()
+
+    # create and open minimum lanes
+    lanes = []
+    for i in range(Const.MAX_LANES):
+        ln = SingleLane()
+        if i < Const.MIN_LANES:
+            ln.open()
+        lanes[i] = ln
+
+    # create products and stock all inventory
+    products = session.query(ModelProduct).all()
+    for prod in products:
+        prod.setup()
+
+    session.commit()
+
+def run():
+    lanes = []
+    open_lanes = Const.MIN_LANES
+    setup()
 
     for i in range(Const.NUM_DAYS):
-        day()
-
-    session.close()
+        day(lanes, open_lanes)

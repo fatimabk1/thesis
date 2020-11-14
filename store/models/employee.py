@@ -367,14 +367,6 @@ def return_employee(eid, session=None):
     session.commit()
 
 
-# swap out emp w/eid for another employee to CASHIER
-# @provide_session
-# def swap_employee(eid, lid, session=None):
-#     return_employee(eid, session)
-#     emp = get_employee(lid, session)
-#     return emp
-
-
 # returns true for if employee has a CASHIER role and lane lid
 def valid_cashier(eid, lid, session=None):
     emp = session.query(ModelEmployee)\

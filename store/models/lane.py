@@ -1,9 +1,11 @@
 import random
-from time import time
+from time import time, timedelta
 # from collections import deque
+from sqlalchemy import func
+import sys
 
 from models.Base import provide_session
-from models import (Model_Shopper)
+from models import Status, Model_Shopper
 from models import Const, Cart, Shopper, Employee
 # from constants import (MIN_LANES, MAX_LANES, QTIME_MIN, QTIME_RANGE,
 # QTIME_IDEAL, CHECKOUT_MIN, CHECKOUT_MAX, Status)
@@ -34,19 +36,19 @@ class SingleLane:
         self.length += 1
 
     def close(self):
-        employee.return_employee(self.employee)
+        Employee.return_employee(self.employee)
 
     def open(self):
-        self.eid, self.items_per_min = self.employee.request_employee()
+        self.eid, self.items_per_min = Employee.request_employee()
 
     def step(self, session=None):
         quota = self.items_per_min
         while self.length > 0:
             sid = self.queue.deq()
-            cart_size = cart.get_size(sid, session)
+            cart_size = Cart.get_size(sid, session)
             amount = min(cart_size, quota)
 
-            cart.scan_n(sid, amount, session)
+            Cart.scan_n(sid, amount, session)
             quota -= amount
 
             # partial scan
@@ -99,25 +101,34 @@ def manage(lanes, open_lanes):
         return
 
     if Const.manage_delay is None:
-        qlen = self.avg_qlen()
-        qalt = self.avg_alt()
-        num_shoppers = self.total_shoppers()
+        qlen = avg_qlen(lanes, open_lanes)
+        qtime = avg_last_shopper_qtime(lanes, open_lanes)
+        num_shoppers = total_shoppers(lanes)
 
-        if (num_shoppers<round(self.open_lanes/2) or qalt<QTIME_MIN) and self.open_lanes>MIN_LANES:
-            self.collapse(qlen, qalt)
-            self.manage_delay = 0
+        open_condition = (
+            (num_shoppers < round(open_lanes / 2)
+             or qtime < Const.QTIME_MIN)
+            and open_lanes > Const.MIN_LANES)
+        close_condition = (
+            qtime > Const.QTIME_MAX
+            and num_shoppers > open_lanes
+            and Const.open_lanes < Const.MAX_LANES)
 
-        elif qalt>QTIME_MAX and num_shoppers>self.open_lanes and self.open_lanes<MAX_LANES:
-            self.expand(qlen, qalt)
-            self.manage_delay = 0
-
+        if open_condition:
+            open_lanes = collapse(qlen, open_lanes)
+            Const.manage_delay = 0
+        elif close_condition:
+            open_lanes = expand(lanes, open_lanes, qlen, qtime)
+            Const.manage_delay = 0
         else:
             pass
 
-    else :
-        self.manage_delay += 1
-        if self.manage_delay == QTIME_RANGE:
-            self.manage_delay = None
+        return open_lanes
+
+    else:
+        Const.manage_delay += 1
+        if Const.manage_delay == Const.QTIME_RANGE:
+            Const.manage_delay = None
 
 
 # ----------------------------------------------- INTERNAL FUNCTIONS
@@ -128,163 +139,107 @@ def total_shoppers(lanes):
         count += lane.length
     return count
 
-# average time to check out last person in each lane
-def expected_avg_qtime(self):
-    total = 0
-    for i in range(self.open_lanes):
-    for i in range(open_lanes):
-        q = self.lanes[lane_no].queue
-        q = lanes[lane_no].queue
-        items = 0
-        for shopper in q:
-            items += shopper.cart_size
-        mins = items / self.lanes[i].items_per_min
-        mins = items / lanes[i].items_per_min
-        total += mins
 
-    return total / self.open_lanes
+# average time to check out last person in each lane
+def avg_last_shopper_qtime(lanes, open_lanes):
+    total = 0
+    for i in range(open_lanes):
+        items = 0
+        for sid in lanes[i].queue:
+            items += Cart.get_size(sid)
+        total += items / lanes[i].items_per_min
     return total / open_lanes
 
+
 #  average queue length
-def avg_qlen(self):
+def avg_qlen(lanes, open_lanes):
     total = 0
-    for lane in self.lanes:
     for lane in lanes:
         total += lane.length
-    return round(total / self.open_lanes)
     return round(total / open_lanes)
 
-# average queue time of shoppers who finished checking out in the past QTIME_RANGE minutes
-@provide_session
-def avg_qtime(self, clock, session=None):
-    qtime, results = 0, 0
-    time = clock - timedelta(minutes=QTIME_RANGE)
-    avg_qtime = session.query(func.avg(Model_Qtime.qtime)).filter(Model_Qtime.stamp==time).first()
 
-    if avg_qtime is None:
-        return 0
-    else:
-        return round(avg_qtime)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def collapse(avg_qlen, avg_qtime):
-    assert (self.open_lanes > MIN_LANES)
-    assert (open_lanes > MIN_LANES)
+def collapse(qlen, open_lanes):
+    assert (open_lanes > Const.MIN_LANES)
 
     # calculate number of lanes to remove
-    if avg_qlen == 0:   # remove 2/3 of lanes
-        num_removed = 2 * round(self.open_lanes / 3)
+    if qlen == 0:   # remove 2/3 of lanes
         num_removed = 2 * round(open_lanes / 3)
-    elif avg_qlen == 1: # remove 1/2 of lanes
-        num_removed = round(self.open_lanes / 2)
+    elif qlen == 1:  # remove 1/2 of lanes
         num_removed = round(open_lanes / 2)
     else:
-        num_removed = self.open_lanes % avg_qlen
-        num_removed = open_lanes % avg_qlen
+        num_removed = open_lanes % qlen
 
-    num_remaining = self.open_lanes - num_removed
     num_remaining = open_lanes - num_removed
 
     # CHECK MINIMUM BOUNDS
-    if num_remaining < MIN_LANES:
-        num_remaining = MIN_LANES
+    if num_remaining < Const.MIN_LANES:
+        num_remaining = Const.MIN_LANES
 
-    new_end = num_remaining-1
-    self.open_lanes = num_remaining
-    open_lanes = num_remaining
+    open_lanes = num_remaining - 1
+    return open_lanes
 
 
-def expand():
-    assert (self.open_lanes != MAX_LANES)
-    assert (open_lanes != MAX_LANES)
+def expand(lanes, open_lanes, qtime, qlen):
+    assert (open_lanes != Const.MAX_LANES)
     ideal_qlen = None
     num_new_lanes = None
 
     # calculate number of lanes to add
-    if avg_qlen == 0:
+    if qlen == 0:  # few shoppers w/large carts
         return
-    elif avg_qlen == 1:
-        num_new_lanes = round(self.open_lanes / 3)
+    elif qlen == 1:  # increase num lanes by 1/3
         num_new_lanes = round(open_lanes / 3)
         ideal_qlen = 1
     else:
-        wait_per_person = avg_qtime / (avg_qlen -1)
-        ideal_qlen = round(QTIME_IDEAL / wait_per_person)
-        delta_qlen = avg_qlen - ideal_qlen
+        wait_per_person = qtime / (qlen - 1)
+        ideal_qlen = round(Const.QTIME_IDEAL / wait_per_person)
+        delta_qlen = qlen - ideal_qlen
         assert(delta_qlen != 0)
-        excess_ppl = delta_qlen * self.open_lanes
         excess_ppl = delta_qlen * open_lanes
-        if ideal_qlen == 0 or ideal_qlen == 1 or avg_qlen < 3:
-            num_new_lanes = self.total_shoppers() - self.open_lanes
-            num_new_lanes = self.total_shoppers() - self.open_lanes
+        if ideal_qlen == 0 or ideal_qlen == 1 or qlen < 3:
             num_new_lanes = total_shoppers() - open_lanes
         else:
             num_new_lanes = round(excess_ppl / ideal_qlen)
 
-    # CHECK MAX BOUNDS 
-    if num_new_lanes + self.open_lanes > MAX_LANES:
-    if num_new_lanes + open_lanes > MAX_LANES:
-        num_new_lanes = MAX_LANES - self.open_lanes
-        num_new_lanes = MAX_LANES - open_lanes
+    # CHECK MAX BOUNDS
+    num_new_lanes = min(num_new_lanes, Const.MAX_LANES - open_lanes)
 
-    # append new lanes
-    qcount_old = self.open_lanes
+    # open new lanes
     qcount_old = open_lanes
     for i in range(num_new_lanes):
-        self.open_lanes += 1
+        lanes[open_lanes].open()
         open_lanes += 1
-        self.lanes[self.open_lanes-1].reset() ## FIX: items per min from employee
-        self.lanes[self.open_lanes-1].reset() ## FIX: items per min from employee
-        lanes[open_lanes-1].reset() ## FIX: items per min from employee
-    assert(self.open_lanes <= MAX_LANES)
-    assert(open_lanes <= MAX_LANES)
+    assert(open_lanes <= Const.MAX_LANES)
 
     # redistribute customers
     new_lane_index = qcount_old
-    old_lane_index = 0;
+    old_lane_index = 0
     for i in range(qcount_old):
-        old_lane = self.lanes[i]
         old_lane = lanes[i]
-        if old_lane.length == 1: # no need to redistribute
+        if old_lane.length == 1:  # no need to redistribute
             continue
 
         # redistribute to new lanes while they have space
         if ideal_qlen is not None:
-            while old_lane.length>ideal_qlen and new_lane_index<self.open_lanes:
-            while old_lane.length>ideal_qlen and new_lane_index<open_lanes:
-                shopper = old_lane.deq()
-                new_lane = self.lanes[new_lane_index]
+            while old_lane.length > ideal_qlen and new_lane_index < open_lanes:
+                sid = old_lane.deq()
                 new_lane = lanes[new_lane_index]
-                new_lane.enq(shopper)
+                new_lane.enq(sid)
 
                 if(new_lane.length >= ideal_qlen):
-                    new_lane_index +=1
+                    new_lane_index += 1
 
             # redistribute remaining customers to all lanes one-by-one
-            while old_lane.length> ideal_qlen:
+            while old_lane.length > ideal_qlen:
                 if i == old_lane_index:
-                    old_lane_index+=1
+                    old_lane_index += 1
                     break
-                shopper = old_lane.deq()
-                new_lane = self.lanes[old_lane_index] 
-                new_lane = lanes[old_lane_index] 
-                new_lane.append(shopper)
-                old_lane_index+=1
+                sid = old_lane.deq()
+                new_lane = lanes[old_lane_index]
+                new_lane.enq(sid)
+                old_lane_index += 1
+        else:
+            sys.exit("FATAL: ideal_qlen is None")
+
+    return open_lanes

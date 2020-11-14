@@ -63,23 +63,46 @@
 - Lane
     - inside
         - enq(sid) @done
+            - test
         - deq() --> sid @done
+            - test
         - set_emp(eid) @done
+            - test
         - close() @done
+            - test
         - open() @done 
+            - test
         - step() @done
+            - test
     - floating
-        - manage()
-            - shortest() @done
-            - collapse()
-            - expand()
-            - avg_qlen
-            - avg_qtime
-            - expected_avg_qtime aka avg_alt
+        - manage() @done
+            - test
+        - shortest() @done
+            - tested via enq
+        - collapse() @done
+            - test
+        - expand() @done
+            - test
+        - total_shoppers @done
+            - test
+        - avg_qlen @done
+            - test
+        - avg_last_qtime aka avg_alt @done
+            - test
         - queue_shopper() @done
+            - test
         - shift_change()  @done
+            - test
 - Simulator
     - day
+        - pre-day
+            - employees only
+        - step all
+        - employee shift change
+        - post-day
+            - employees only
     - month
-    - 
+        - pay labor
+        - order inventory
 - Report
+
