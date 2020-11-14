@@ -10,4 +10,4 @@ from models.cart import ModelCart
 from models.shopper import ModelShopper, Status
 from models.employee import Role, Shift, Day, ModelSchedule, ModelEmployee
 
-from models import shopper, cart, inventory, product, employee
+from models import product, inventory, cart, shopper, employee, lane

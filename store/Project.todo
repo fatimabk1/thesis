@@ -62,19 +62,22 @@
         - prepare_employees(session)  @done 
 - Lane
     - inside
-        - enq(sid)
-        - deq() --> sid
-        - set_emp(eid) [might not be neccessary anymore]
-        - validate_emp(eid)
-        - close()
-        - open()
+        - enq(sid) @done
+        - deq() --> sid @done
+        - set_emp(eid) @done
+        - close() @done
+        - open() @done 
+        - step() @done
     - floating
         - manage()
-            - shortest()
+            - shortest() @done
             - collapse()
             - expand()
-        - step()
-        - select_queue() [work on naming - OG was queue_shopper]
+            - avg_qlen
+            - avg_qtime
+            - expected_avg_qtime aka avg_alt
+        - queue_shopper() @done
+        - shift_change()  @done
 - Simulator
     - day
     - month

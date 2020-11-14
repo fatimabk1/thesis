@@ -1,6 +1,6 @@
-from models.base import check_session, check_object_status
-from models.cart import ModelCart
-from models.product import ModelProduct, ModelCategory
+from models.Base import check_session, check_object_status
+from models.Cart import ModelCart
+from models.Product import ModelProduct, ModelCategory
 from sqlalchemy import (Column, Integer, Float)
 import random
 from datetime import date
@@ -12,11 +12,11 @@ from models import (Base,
                     ModelRevenue,
                     ModelQtime)
 # CATEGORY_COUNT, SHOPPER_MIN, SHOPPER_MAX
-from models import constants as const
-from models import cart
+from models import Const
+from models import Cart
 
 # random.seed(time.clock())
-CLOCK = const.CLOCK
+CLOCK = Const.CLOCK
 
 
 class Status(IntEnum):
@@ -33,7 +33,7 @@ def random_start_min():
 
 
 def random_quota():
-    return random.randint(const.SHOPPER_MIN, const.SHOPPER_MAX)
+    return random.randint(Const.SHOPPER_MIN, Const.SHOPPER_MAX)
 
 
 class ModelShopper(Base):
@@ -98,7 +98,7 @@ class ModelShopper(Base):
         self.status = stat
 
     def reset_browse(self):
-        if const.EOD_FLAG is True:
+        if Const.EOD_FLAG is True:
             self.browse_mins = random.randint(1, 3)
         else:
             self.browse_mins = random.randint(2, 5)
@@ -111,7 +111,7 @@ class ModelShopper(Base):
         prod = session.query(ModelProduct)\
             .filter(ModelProduct.category == cat).all()
         prod = prod[r]
-        cart.add_item(self.id, prod.grp_id, session)
+        Cart.add_item(self.id, prod.grp_id, session)
         # print("\t\tgrp = {}, cart = {}"
         #       .format(prod.grp_id, cart.get_size(self.id)))
 

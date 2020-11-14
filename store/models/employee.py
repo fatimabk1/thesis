@@ -1,5 +1,5 @@
 import enum
-from models.inventory import ModelInventory
+from models.Inventory import ModelInventory
 from sqlalchemy import Column, Integer, Date, distinct, select, func
 import sys
 import random
@@ -7,8 +7,8 @@ from datetime import timedelta, date
 from tabulate import tabulate
 from math import floor
 from enum import IntEnum
-from models import Base, provide_session, ModelCost, ModelProduct, const
-from models import inventory
+from models import Base, provide_session, ModelCost, ModelProduct, Const
+from models import Inventory
 
 
 # a specific job an employee is doing
@@ -165,7 +165,7 @@ class ModelEmployee(Base):
                 prev = session.query(func.sum(ModelInventory.back_stock))\
                     .filter(ModelInventory.grp_id == self.task).one()[0]
                 for i in range(self.unload_speed):
-                    inventory.unload(self.task, session)
+                    Inventory.unload(self.task, session)
                 curr = session.query(func.sum(ModelInventory.back_stock))\
                     .filter(ModelInventory.grp_id == self.task).one()[0]
                 print("\tUNLOAD grp_id={}: prev={}, curr={}".format(self.task, prev, curr))
@@ -173,7 +173,7 @@ class ModelEmployee(Base):
             elif self.role == Role.TOSS:
                 prev = session.query(func.sum(ModelInventory.shelved_stock))\
                     .filter(ModelInventory.grp_id == self.task).one()[0]
-                inventory.toss(self.task, self.stock_speed, session)
+                Inventory.toss(self.task, self.stock_speed, session)
                 curr = session.query(func.sum(ModelInventory.shelved_stock))\
                     .filter(ModelInventory.grp_id == self.task).one()[0]
                 print("\tTOSS {}: prev={}, curr={}".format(self.task, prev, curr))
@@ -181,7 +181,7 @@ class ModelEmployee(Base):
             elif self.role == Role.RESTOCK:
                 prev = session.query(func.sum(ModelInventory.shelved_stock))\
                     .filter(ModelInventory.grp_id == self.task).one()[0]
-                inventory.restock(self.task, self.stock_speed, session)
+                Inventory.restock(self.task, self.stock_speed, session)
                 curr = session.query(func.sum(ModelInventory.shelved_stock))\
                     .filter(ModelInventory.grp_id == self.task).one()[0]
                 print("\tRESTOCK {}: prev={}, curr={}".format(self.task, prev, curr))
@@ -334,11 +334,11 @@ def create_employee(session=None):
 
 # assigns employee to CASHIER role & lane;
 # called by a lane object
-def get_employee(lid, session=None):
+@provide_session
+def get_employee(lid, shift, session=None):
     emps = session.query(ModelEmployee)\
-        .filter(ModelEmployee.role == Role.RESTOCK,
-                ModelEmployee.role == Role.TOSS,
-                ModelEmployee.role == Role.IDLE).all()
+        .filter(ModelEmployee.role != Role.CASHIER)\
+        .filter(ModelEmployee.shift == shift).all()
     if emps:
         # sort employees by task importance
         if const.store_before(const.CLOCK):
@@ -358,6 +358,7 @@ def get_employee(lid, session=None):
 
 
 # assign employee a new role & removes lane
+@provide_session
 def return_employee(eid, session=None):
     e = session.query(ModelEmployee)\
         .filter(ModelEmployee.id == eid).one()
@@ -367,10 +368,21 @@ def return_employee(eid, session=None):
 
 
 # swap out emp w/eid for another employee to CASHIER
-def swap_employee(eid, lid, session=None):
-    return_employee(eid, session)
-    emp = get_employee(lid, session)
-    return emp
+# @provide_session
+# def swap_employee(eid, lid, session=None):
+#     return_employee(eid, session)
+#     emp = get_employee(lid, session)
+#     return emp
+
+
+# returns true for if employee has a CASHIER role and lane lid
+def valid_cashier(eid, lid, session=None):
+    emp = session.query(ModelEmployee)\
+        .filter(ModelEmployee.id == eid).one()
+    if emp.role == Role.CASHIER and emp.lane == lid:  # ADD A SHIFT CHECK
+        return True
+    else:
+        return False
 
 
 # sets schedule for all employees, each works 6 days a week
@@ -423,9 +435,9 @@ def set_day_schedule(day, session=None):
 # sets up all employees with a valid role & task
 def prepare_employees(shift, session=None):
     # task to do
-    unload_tasks = inventory.unload_list(session)
-    restock_tasks = inventory.restock_list(session)
-    toss_tasks = inventory.toss_list(session)
+    unload_tasks = Inventory.unload_list(session)
+    restock_tasks = Inventory.restock_list(session)
+    toss_tasks = Inventory.toss_list(session)
 
     # tasks already assigned
     unload_assigned = session.query(ModelEmployee.task)\

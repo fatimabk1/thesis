@@ -1,14 +1,13 @@
-from models import cart
 from sqlalchemy import Column, Integer, Date, distinct, select
 import sys
 from datetime import timedelta, date
 from sqlalchemy.sql import func
 from math import floor
 from tabulate import tabulate
-from models import Base, provide_session, ModelCost, ModelProduct, const
+from models import Base, provide_session, ModelCost, ModelProduct, Const
 
-CLOCK = const.CLOCK
-TRUCK_DAYS = const.TRUCK_DAYS
+CLOCK = Const.CLOCK
+TRUCK_DAYS = Const.TRUCK_DAYS
 
 
 class ModelInventory(Base):
