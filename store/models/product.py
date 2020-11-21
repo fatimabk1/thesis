@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Float, Enum
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, null
 from sqlalchemy.sql.sqltypes import Date
 from random import randint
 from datetime import datetime, timedelta, date
@@ -8,10 +8,10 @@ from enum import IntEnum
 import random
 from tabulate import tabulate
 
-from models import const, Base, provide_session  # REVIEW: clock access
+from models import Const, Base, provide_session  # REVIEW: clock access
 
 
-CLOCK = const.CLOCK
+CLOCK = Const.CLOCK
 
 
 class ModelCategory(Base):
@@ -144,7 +144,8 @@ class ModelProduct(Base):
             )
         self.price_status = PRICE.regular
         self.popularity_delta = round(0.12 * self.popularity, 2)
-        self.lot_price = 2
+        self.lot_price = (self.regular_price +
+                          round(random.uniform(0.02, 0.07), 2))
         self.max_shelved_stock = self.lot_quantity * 2
         self.max_back_stock = self.lot_quantity * 8
         self.order_threshold = round(self.max_back_stock/2)

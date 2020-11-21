@@ -1,22 +1,29 @@
 import random
-from time import time, timedelta
+from datetime import time, timedelta
 # from collections import deque
 from sqlalchemy import func
 import sys
 
 from models.Base import provide_session
-from models import Status, Model_Shopper
+from models import Status, ModelShopper
 from models import Const, Cart, Shopper, Employee
 # from constants import (MIN_LANES, MAX_LANES, QTIME_MIN, QTIME_RANGE,
 # QTIME_IDEAL, CHECKOUT_MIN, CHECKOUT_MAX, Status)
 
 
 class SingleLane:
-    def __init__(self):
+    def __init__(self, index):
+
+        self.id = index
         self.queue = []
         self.employee = None
         self.items_per_min = None
         self.length = 0
+
+    def print(self, index):
+        print("<Lane_{}: eid={}, speed={}, length={}"
+              .format(self.id, self.employee, self.items_per_min, self.length),
+              "\tqueue: ", self.queue, " >")
 
     def set_employee_and_speed(self, eid, speed):
         self.employee = eid
@@ -36,15 +43,17 @@ class SingleLane:
         self.length += 1
 
     def close(self):
+        print("\tclosing lane_{}, returning emp_{}".format(self.id, self.employee))
         Employee.return_employee(self.employee)
 
     def open(self):
-        self.eid, self.items_per_min = Employee.request_employee()
+        print("\topening lane_{}".format(self.id))
+        self.employee, self.items_per_min = Employee.request_employee(self.id)
 
     def step(self, session=None):
         quota = self.items_per_min
         while self.length > 0:
-            sid = self.queue.deq()
+            sid = self.deq()
             cart_size = Cart.get_size(sid, session)
             amount = min(cart_size, quota)
 
@@ -56,8 +65,8 @@ class SingleLane:
                 self.insert_left(sid)
             # shopper is done
             else:
-                s = session.query(Model_Shopper)\
-                    .filter(Model_Shopper.id == sid).one()
+                s = session.query(ModelShopper)\
+                    .filter(ModelShopper.id == sid).one()
                 s.set_status(Status.DONE)
 
             if quota == 0:
@@ -79,28 +88,32 @@ def shortest(lanes, open_lanes):
 
 # CHECK if we need to pass a session in here in order
 # for shopper changes to persist
-def queue_shopper(shopper, lanes, open_lanes):
+def queue_shopper(sid, lanes, open_lanes):
     index = shortest(lanes, open_lanes)
-    shopper.lane = index
-    lanes[index].enq(shopper)
-    shopper.qtime = 0
+    print("\tENQ: shopper_{} --> lane_{} "
+          .format(sid, index))
+    lanes[index].enq(sid)
+    return index
 
 
 def shift_change(lanes, num_open):
     for i in range(num_open):
-        lane = lanes[i]
-        if Employee.valid_cashier(lane.id, lane.employee) is False:
-            eid, speed = Employee.swap(lane.employee, lane.id)
-            lane.set_employee(eid, speed)
+        ln = lanes[i]
+        if Employee.valid_cashier(ln.id, ln.employee) is False:
+            Employee.return_employee(ln.employee)
+            eid, speed = Employee.request_employee(ln.id)
+            ln.set_employee(eid, speed)
 
 
 def manage(lanes, open_lanes):
     clock = Const.CLOCK
     now = time(clock.hour, clock.minute)
     if now < time(10, 15):
-        return
+        print("too early for lane management...")
+        return open_lanes
 
-    if Const.manage_delay is None:
+    if Const.MANAGE_DELAY is None:
+        print("managing lanes...")
         qlen = avg_qlen(lanes, open_lanes)
         qtime = avg_last_shopper_qtime(lanes, open_lanes)
         num_shoppers = total_shoppers(lanes)
@@ -116,19 +129,21 @@ def manage(lanes, open_lanes):
 
         if open_condition:
             open_lanes = collapse(qlen, open_lanes)
-            Const.manage_delay = 0
+            Const.MANAGE_DELAY = 0
         elif close_condition:
             open_lanes = expand(lanes, open_lanes, qlen, qtime)
-            Const.manage_delay = 0
+            Const.MANAGE_DELAY = 0
         else:
             pass
 
         return open_lanes
 
     else:
-        Const.manage_delay += 1
-        if Const.manage_delay == Const.QTIME_RANGE:
-            Const.manage_delay = None
+        print("no lane management...")
+        Const.MANAGE_DELAY += 1
+        if Const.MANAGE_DELAY == Const.QTIME_RANGE:
+            Const.MANAGE_DELAY = None
+        return open_lanes
 
 
 # ----------------------------------------------- INTERNAL FUNCTIONS
@@ -243,3 +258,10 @@ def expand(lanes, open_lanes, qtime, qlen):
             sys.exit("FATAL: ideal_qlen is None")
 
     return open_lanes
+
+
+def print_active_lanes(lanes):
+    print("ACTIVE LANES ---")
+    for i, ln in enumerate(lanes):
+        if ln.length > 0:
+            ln.print(i)

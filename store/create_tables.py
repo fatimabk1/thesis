@@ -1,10 +1,5 @@
-from models.base import Base, Engine
-from models import cost, product, inventory, cart
-from sqlalchemy.orm import relationship
-# from models import product
-# from models import inventory
+from models.Base import Base, Engine
+from models import Cost, Product, Inventory, Cart
 
-# inventory.ModelInventory.product = relationship("Product", )
-# product.ModelProduct.stock = relationship()
 
 Base.metadata.create_all(Engine)

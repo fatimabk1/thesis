@@ -1,13 +1,15 @@
 # MODELS EXPORTED FUNCTIONS
-from models.base import Base, provide_session, Session
-from models import constants as const
+from models.Base import Base, provide_session, Session
+from models import Constants as Const
+from models.Constants import Shift, Day
 
-from models.cost import ModelCost
-from models.some_models import ModelRevenue, ModelQtime
-from models.product import ModelProduct, ModelCategory, PRICE
-from models.inventory import ModelInventory
-from models.cart import ModelCart
-from models.shopper import ModelShopper, Status
-from models.employee import Role, Shift, Day, ModelSchedule, ModelEmployee
+from models.Cost import ModelCost
+from models.Some_models import ModelRevenue, ModelQtime
+from models.Product import ModelProduct, ModelCategory, PRICE
+from models.Inventory import ModelInventory
+from models.Cart import ModelCart
+from models.Shopper import ModelShopper, Status
+from models.Employee import Role, ModelSchedule, ModelEmployee
+from models.Lane import SingleLane
 
-from models import product, inventory, cart, shopper, employee, lane
+from models import Product, Inventory, Cart, Shopper, Employee, Lane

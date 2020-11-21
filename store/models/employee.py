@@ -1,4 +1,3 @@
-import enum
 from models.Inventory import ModelInventory
 from sqlalchemy import Column, Integer, Date, distinct, select, func
 import sys
@@ -7,8 +6,9 @@ from datetime import timedelta, date
 from tabulate import tabulate
 from math import floor
 from enum import IntEnum
-from models import Base, provide_session, ModelCost, ModelProduct, Const
+from models import Base, provide_session, ModelCost, ModelProduct, Const, Shift
 from models import Inventory
+from models.Constants import Day
 
 
 # a specific job an employee is doing
@@ -18,23 +18,6 @@ class Role(IntEnum):
     TOSS = 2
     UNLOAD = 3
     IDLE = 4
-
-
-# specific times an employee works
-class Shift(IntEnum):
-    MORNING = 0
-    EVENING = 1
-    OFF = 2
-
-
-class Day(IntEnum):
-    SUNDAY = 0
-    MONDAY = 1
-    TUESDAY = 2
-    WEDNESDAY = 3
-    THURSDAY = 4
-    FRIDAY = 5
-    SATURDAY = 6
 
 
 class ModelSchedule(Base):
@@ -98,19 +81,19 @@ def print_full_schedule(session=None):
 
 
 def checkout_speed():
-    return random.randint(const.CHECKOUT_MIN, const.CHECKOUT_MAX)
+    return random.randint(Const.CHECKOUT_MIN, Const.CHECKOUT_MAX)
 
 
 def stock_speed():
-    return random.randint(const.STOCK_MIN, const.STOCK_MAX)
+    return random.randint(Const.STOCK_MIN, Const.STOCK_MAX)
 
 
 def unload_speed():
-    return random.randint(const.UNLOAD_MIN, const.UNLOAD_MAX)
+    return random.randint(Const.UNLOAD_MIN, Const.UNLOAD_MAX)
 
 
 def hourly_wage():
-    return float(random.randint(const.WAGE_MIN, const.WAGE_MAX))
+    return float(random.randint(Const.WAGE_MIN, Const.WAGE_MAX))
 
 
 class ModelEmployee(Base):
@@ -151,7 +134,7 @@ class ModelEmployee(Base):
         print("<Employee_{}: shift={}, role={}, task={}, lane={}, checkout_speed={}"
               .format(self.id, shift, role, self.task,
                       self.lane, self.checkout_speed) +
-              ", stock_speed={}, unload={}, wage={:.2f}, time={}>"
+              ", stock_speed={}, unload_speed={}, wage={:.2f}, time={}>"
               .format(self.stock_speed, self.unload_speed,
                       self.hourly_wage, self.time_worked))
 
@@ -241,75 +224,43 @@ class ModelEmployee(Base):
 
 # ---------------------------------------------------- internal functions
 # unload > toss > restock > idle
-def cmp_before(a, b):
-    if a.role == b.role:
-        return a
-    elif a.role == Role.UNLOAD or b.role == Role.UNLOAD:
-        if a.role == Role.UNLOAD:
-            return a
-        else:
-            return b
-    elif a.role == Role.TOSS or b.role == Role.TOSS:
-        if a.role == Role.TOSS:
-            return a
-        else:
-            return b
-    elif a.role == Role.RESTOCK or b.role == Role.RESTOCK:
-        if a.role == Role.RESTOCK:
-            return a
-        else:
-            return b
-    elif a.role == Role.IDLE or b.role == Role.IDLE:
-        if a.role == Role.IDLE:
-            return a
-        else:
-            return b
+def cmp_before(a):
+    if a.role == Role.UNLOAD:
+        return 1
+    elif a.role == Role.TOSS:
+        return 2
+    elif a.role == Role.RESTOCK:
+        return 3
+    elif a.role == Role.IDLE:
+        return 4
     else:
         sys.exit("ORDERING ERROR: object with Role of CASHIER")
 
 
-# restock > toss > idle
-def cmp_open(a, b):
-    if a.role == b.role:
-        return a
-    elif a.role == Role.RESTOCK or b.role == Role.RESTOCK:
-        if a.role == Role.RESTOCK:
-            return a
-        else:
-            return b
-    elif a.role == Role.TOSS or b.role == Role.TOSS:
-        if a.role == Role.TOSS:
-            return a
-        else:
-            return b
-    elif a.role == Role.IDLE or b.role == Role.IDLE:
-        if a.role == Role.IDLE:
-            return a
-        else:
-            return b
+# restock > toss > unload > idle
+def cmp_open(a):
+    if a.role == Role.RESTOCK:
+        return 1
+    elif a.role == Role.TOSS:
+        return 2
+    elif a.role == Role.UNLOAD:
+        return 3
+    elif a.role == Role.IDLE:
+        return 4
     else:
         sys.exit("ORDERING ERROR: object with Role of CASHIER")
 
 
-# toss > restock > idle
-def cmp_closed(a, b):
-    if a.role == b.role:
-        return a
-    elif a.role == Role.TOSS or b.role == Role.TOSS:
-        if a.role == Role.TOSS:
-            return a
-        else:
-            return b
-    elif a.role == Role.RESTOCK or b.role == Role.RESTOCK:
-        if a.role == Role.RESTOCK:
-            return a
-        else:
-            return b
-    elif a.role == Role.IDLE or b.role == Role.IDLE:
-        if a.role == Role.IDLE:
-            return a
-        else:
-            return b
+# toss > restock > unload > idle
+def cmp_closed(a):
+    if a.role == Role.TOSS:
+        return 1
+    elif a.role == Role.RESTOCK:
+        return 2
+    elif a.role == Role.UNLOAD:
+        return 3
+    elif a.role == Role.IDLE:
+        return 4
     else:
         sys.exit("ORDERING ERROR: object with Role of CASHIER")
 
@@ -332,21 +283,23 @@ def create_employee(session=None):
     session.commit()
 
 
+# START HERE >>>>> figuring out python sort
+
 # assigns employee to CASHIER role & lane;
 # called by a lane object
 @provide_session
-def get_employee(lid, shift, session=None):
+def request_employee(lid, session=None):
     emps = session.query(ModelEmployee)\
         .filter(ModelEmployee.role != Role.CASHIER)\
-        .filter(ModelEmployee.shift == shift).all()
+        .filter(ModelEmployee.shift == Const.CURRENT_SHIFT).all()
     if emps:
         # sort employees by task importance
-        if const.store_before(const.CLOCK):
-            emps.sort(cmp_before)
-        elif const.store_open(const.CLOCK):
-            emps.sort(cmp_open)
+        if Const.store_before():
+            emps.sort(key=cmp_before)
+        elif Const.store_open():
+            emps.sort(key=cmp_open)
         else:
-            emps.sort(cmp_closed)
+            emps.sort(key=cmp_closed)
 
         # choose employee doing least important task
         e = emps.pop()
@@ -354,7 +307,11 @@ def get_employee(lid, shift, session=None):
         e.task = None
         e.lane = lid
         session.commit()
-        return e.id
+        return e.id, e.checkout_speed
+    else:
+        sys.exit(
+            "request_employee() Fatal: No available employees with shift {}"
+            .format(Const.CURRENT_SHIFT))
 
 
 # assign employee a new role & removes lane
@@ -368,6 +325,7 @@ def return_employee(eid, session=None):
 
 
 # returns true for if employee has a CASHIER role and lane lid
+@provide_session
 def valid_cashier(eid, lid, session=None):
     emp = session.query(ModelEmployee)\
         .filter(ModelEmployee.id == eid).one()
@@ -425,7 +383,7 @@ def set_day_schedule(day, session=None):
 
 
 # sets up all employees with a valid role & task
-def prepare_employees(shift, session=None):
+def prepare_employees(session=None):
     # task to do
     unload_tasks = Inventory.unload_list(session)
     restock_tasks = Inventory.restock_list(session)
@@ -449,8 +407,16 @@ def prepare_employees(shift, session=None):
     unload = [unload_tasks, unload_assigned]
     restock = [restock_tasks, restock_assigned]
     toss = [toss_tasks, toss_assigned]
+
+    print("\t\tUNLOAD TODO:", unload_tasks)
+    print("\t\tUNLOAD ASSIGNED:", unload_assigned)
+    print("\t\tRESTOCK TODO:", restock_tasks)
+    print("\t\tRESTOCK ASSIGNED:", restock_assigned)
+    print("\t\tTOSS TODO:", toss_tasks)
+    print("\t\tTOSS ASSIGNED:", toss_assigned)
+
     group = session.query(ModelEmployee)\
-        .filter(ModelEmployee.shift == shift)\
+        .filter(ModelEmployee.shift == Const.CURRENT_SHIFT)\
         .filter(ModelEmployee.role != Role.CASHIER).all()
 
     # if employee has valid role & task, remove task
@@ -459,22 +425,22 @@ def prepare_employees(shift, session=None):
     for emp in group:
         r = emp.get_role()
         t = emp.get_task()
-        print("EMP {}: role = {}, task = {}".format(emp.id, r, t))
+        # print("EMP {}: role = {}, task = {}".format(emp.id, r, t))
         if r == Role.UNLOAD and t in unload[TODO]:
-            print("\t\tUNLOAD TODO:", unload_tasks)
-            print("\t\tUNLOAD ASSIGNED:", unload_assigned)
+            # print("\t\tUNLOAD TODO:", unload_tasks)
+            # print("\t\tUNLOAD ASSIGNED:", unload_assigned)
             ready.append(emp.id)
             unload[TODO].remove(t)
             unload[ASSIGNED].remove(t)
         elif r == Role.RESTOCK and t in restock[TODO]:
-            print("\t\tRESTOCK TODO:", restock_tasks)
-            print("\t\tRESTOCK ASSIGNED:", restock_assigned)
+            # print("\t\tRESTOCK TODO:", restock_tasks)
+            # print("\t\tRESTOCK ASSIGNED:", restock_assigned)
             ready.append(emp.id)
             restock[TODO].remove(t)
             restock[ASSIGNED].remove(t)
         elif r == Role.TOSS and t in toss[TODO]:
-            print("\t\tTOSS TODO:", toss_tasks)
-            print("\t\tTOSS ASSIGNED:", toss_assigned)
+            # print("\t\tTOSS TODO:", toss_tasks)
+            # print("\t\tTOSS ASSIGNED:", toss_assigned)
             ready.append(emp.id)
             toss[TODO].remove(t)
             toss[ASSIGNED].remove(t)
@@ -491,91 +457,101 @@ def prepare_employees(shift, session=None):
 
         # if role is still available, update employee with new task
         if r == Role.UNLOAD and unload[TODO]:  # is not empty
-            print("-------> new task")
-            print("\t\tUNLOAD TODO:", unload_tasks)
-            print("\t\tUNLOAD ASSIGNED:", unload_assigned)
+            # print("-------> new task")
+            # print("\t\tUNLOAD TODO:", unload_tasks)
+            # print("\t\tUNLOAD ASSIGNED:", unload_assigned)
             emp.set_task(unload[TODO][0])
             unload[TODO].remove(unload[TODO][0])
-            print("role: UNLOAD, task: {}".format(emp.get_task()))
+            # print("role: UNLOAD, task: {}".format(emp.get_task()))
         elif r == Role.RESTOCK and restock[TODO]:
-            print("-------> new task")
-            print("\t\tRESTOCK TODO:", restock_tasks)
-            print("\t\tRESTOCK ASSIGNED:", restock_assigned)
+            # print("-------> new task")
+            # print("\t\tRESTOCK TODO:", restock_tasks)
+            # print("\t\tRESTOCK ASSIGNED:", restock_assigned)
             emp.set_task(restock[TODO][0])
             restock[TODO].remove(restock[TODO][0])
-            print("role: RESTOCK, task: {}".format(emp.get_task()))
+            # print("role: RESTOCK, task: {}".format(emp.get_task()))
         elif r == Role.TOSS and toss[TODO]:
-            print("-------> new task")
-            print("\t\tTOSS TODO:", toss_tasks)
-            print("\t\tTOSS ASSIGNED:", toss_assigned)
+            # print("-------> new task")
+            # print("\t\tTOSS TODO:", toss_tasks)
+            # print("\t\tTOSS ASSIGNED:", toss_assigned)
             emp.set_task(toss[TODO][0])
             toss[TODO].remove(toss[TODO][0])
-            print("role: TOSS, task: {}".format(emp.get_task()))
+            # print("role: TOSS, task: {}".format(emp.get_task()))
 
         # if role is filled or employee is IDLE
         # assign a new role & task prioritized by time of day
         else:
-            print("-------> new role & new task")
+            # print("-------> new role & new task")
             # priority: unload > toss > restock > idle
-            if const.store_before(const.CLOCK):
+            if Const.store_before():
                 if unload[TODO]:
-                    print("\t\tUNLOAD TODO:", unload_tasks)
+                    # print("\t\tUNLOAD TODO:", unload_tasks)
                     emp.set_role_and_task(Role.UNLOAD, unload[TODO][0])
                     unload[TODO].remove(unload[TODO][0])
-                    print("role: UNLOAD, task: {}".format(emp.get_task()))
+                    # print("role: UNLOAD, task: {}".format(emp.get_task()))
                 elif toss[TODO]:
-                    print("\t\tTOSS TODO:", toss_tasks)
+                    # print("\t\tTOSS TODO:", toss_tasks)
                     emp.set_role_and_task(Role.TOSS, toss[TODO][0])
                     toss[TODO].remove(toss[TODO][0])
-                    print("role: TOSS, task: {}".format(emp.get_task()))
+                    # print("role: TOSS, task: {}".format(emp.get_task()))
                 elif restock[TODO]:
-                    print("\t\tRESTOCK TODO:", restock_tasks)
+                    # print("\t\tRESTOCK TODO:", restock_tasks)
                     emp.set_role_and_task(Role.RESTOCK, restock[TODO][0])
                     restock[TODO].remove(restock[TODO][0])
-                    print("role: RESTOCK, task: {}".format(emp.get_task()))
+                    # print("role: RESTOCK, task: {}".format(emp.get_task()))
                 else:
                     emp.set_role_and_task(Role.IDLE, None)
-                    print("role: IDLE, task: {}".format(emp.get_task()))
+                    # print("role: IDLE, task: {}".format(emp.get_task()))
 
             # priority: restock > toss > unload > idle
-            elif const.store_open(const.CLOCK):
+            elif Const.store_open():
                 if restock[TODO]:
-                    print("\t\tRESTOCK TODO:", restock_tasks)
+                    # print("\t\tRESTOCK TODO:", restock_tasks)
                     emp.set_role_and_task(Role.RESTOCK, restock[TODO][0])
                     restock[TODO].remove(restock[TODO][0])
-                    print("role: RESTOCK, task: {}".format(emp.get_task()))
+                    # print("role: RESTOCK, task: {}".format(emp.get_task()))
                 elif toss[TODO]:
-                    print("\t\tTOSS TODO:", toss_tasks)
+                    # print("\t\tTOSS TODO:", toss_tasks)
                     emp.set_role_and_task(Role.TOSS, toss[TODO][0])
                     toss[TODO].remove(toss[TODO][0])
-                    print("role: TOSS, task: {}".format(emp.get_task()))
+                    # print("role: TOSS, task: {}".format(emp.get_task()))
                 elif unload[TODO]:
-                    print("\t\tUNLOAD TODO:", unload_tasks)
+                    # print("\t\tUNLOAD TODO:", unload_tasks)
                     emp.set_role_and_task(Role.UNLOAD, unload[TODO][0])
                     unload[TODO].remove(unload[TODO][0])
-                    print("role: UNLOAD, task: {}".format(emp.get_task()))
+                    # print("role: UNLOAD, task: {}".format(emp.get_task()))
                 else:
                     emp.set_role_and_task(Role.IDLE, None)
-                    print("role: IDLE, task: {}".format(emp.get_task()))
+                    # print("role: IDLE, task: {}".format(emp.get_task()))
 
             # priority: toss > restock > unload > idle
-            elif const.store_closed(const.CLOCK):
+            elif Const.store_closed():
                 if toss[TODO]:
-                    print("\t\tTOSS TODO:", toss_tasks)
+                    # print("\t\tTOSS TODO:", toss_tasks)
                     emp.set_role_and_task(Role.TOSS, toss[TODO][0])
                     toss[TODO].remove(toss[TODO][0])
-                    print("role: TOSS, task: {}".format(emp.get_task()))
+                    # print("role: TOSS, task: {}".format(emp.get_task()))
                 elif restock[TODO]:
-                    print("\t\tRESTOCK TODO:", restock_tasks)
+                    # print("\t\tRESTOCK TODO:", restock_tasks)
                     emp.set_role_and_task(Role.RESTOCK, restock[TODO][0])
                     restock[TODO].remove(restock[TODO][0])
-                    print("role: RESTOCK, task: {}".format(emp.get_task()))
+                    # print("role: RESTOCK, task: {}".format(emp.get_task()))
                 elif unload[TODO]:
-                    print("\t\tUNLOAD TODO:", unload_tasks)
+                    # print("\t\tUNLOAD TODO:", unload_tasks)
                     emp.set_role_and_task(Role.UNLOAD, unload[TODO][0])
                     unload[TODO].remove(unload[TODO][0])
-                    print("role: UNLOAD, task: {}".format(emp.get_task()))
+                    # print("role: UNLOAD, task: {}".format(emp.get_task()))
                 else:
                     emp.set_role_and_task(Role.IDLE, None)
-                    print("role: IDLE, task: {}".format(emp.get_task()))
+                    # print("role: IDLE, task: {}".format(emp.get_task()))
     session.commit()
+
+
+def print_active_employees(session=None):
+    print("ACTIVE EMPLOYEES --- ")
+    emps = session.query(ModelEmployee)\
+        .filter(ModelEmployee.shift == Const.CURRENT_SHIFT)\
+        .filter(ModelEmployee.role != Role.IDLE)\
+        .order_by(ModelEmployee.role).all()
+    for e in emps:
+        e.print()

@@ -1,7 +1,7 @@
-from models.base import check_session, check_object_status
+from models.Base import check_session, check_object_status
 from sqlalchemy import Column, Integer, func
 from tabulate import tabulate
-from models import inventory
+from models import Inventory
 from models import Base, provide_session, ModelProduct, Session
 
 
@@ -56,7 +56,7 @@ def print_cart(sid, session=None):
 
 
 def add_item(sid, grp_id, session=None):
-    inv_id = inventory.select_inv(grp_id, session)
+    inv_id = Inventory.select_inv(grp_id, session)
     row = ModelCart(
         shopper_id=sid,
         inventory_id=inv_id,
@@ -100,19 +100,11 @@ def get_size(sid, session=None):
 def get_total(sid, session=None):
     cart = session.query(ModelCart)\
         .filter(ModelCart.shopper_id == sid).all()
-    print("get_total session = ", session)
+
     total = 0
     if cart:
-        table = []
         for item in cart:
-            table.append(item.__repr__(session))
             product = session.query(ModelProduct)\
                 .filter(ModelProduct.grp_id == item.grp_id).one()
-            # table.append(product.row_basic_info(session))
             total += product.get_price()
-        # prod_headers = ["grp", "cat", "p-stat",
-        #                 "reg", "sale", "pop", "pop∆"]
-        item_headers = ["sid", "item_no", "product",
-                        "inv_id", "name", "brand"]
-        print(tabulate(table, headers=item_headers))
     return round(total, 2)

@@ -62,10 +62,10 @@ class ModelShopper(Base):
         elif self.status == 4:
             stat_string = "DONE"
 
-        return ("<shopper_{}_{}: start={}, browse={}, quota={}, cart={}, lane={}, qtime={}, total={}>"
-                .format(self.id, stat_string, self.start_min,
-                        self.browse_mins, self.quota, self.cart_count,
-                        self.lane, self.qtime, self.total))
+        print("<shopper_{}_{}: start={}, browse={}, quota={}, cart_count={}, lane={}, qtime={}, total={}>"
+              .format(self.id, stat_string, self.start_min,
+                      self.browse_mins, self.quota, self.cart_count,
+                      self.lane, self.qtime, self.total))
 
     def __repr__(self):
         stat_string = ""
@@ -104,7 +104,7 @@ class ModelShopper(Base):
             self.browse_mins = random.randint(2, 5)
 
     def select_grp(self, session=None):
-        cat = random.randint(1, const.CATEGORY_COUNT)
+        cat = random.randint(1, Const.CATEGORY_COUNT)
         category = session.query(ModelCategory)\
             .filter(ModelCategory.id == cat).one()
         r = random.randint(1, category.product_count()) - 1
@@ -113,13 +113,15 @@ class ModelShopper(Base):
         prod = prod[r]
         Cart.add_item(self.id, prod.grp_id, session)
         # print("\t\tgrp = {}, cart = {}"
-        #       .format(prod.grp_id, cart.get_size(self.id)))
+        #       .format(prod.grp_id, Cart.get_size(self.id)))
 
     def increment_qtime(self, session=None):
         self.qtime += 1
         session.commit()
 
     def set_lane(self, lid):
+        if self.lane is None:
+            self.qtime = 0
         self.lane = lid
 
 
@@ -131,7 +133,8 @@ def create(n, session=None):
 
 
 @provide_session
-def step(sid, CLOCK, session=None):
+def step(sid, session=None):
+    CLOCK = Const.CLOCK
     shopper = session.query(ModelShopper)\
         .filter(ModelShopper.id == sid).one()
 
@@ -143,7 +146,7 @@ def step(sid, CLOCK, session=None):
 
         # done shopping
         if shopper.quota == 0:
-            shopper.total = cart.get_total(shopper.id, session)
+            shopper.total = Cart.get_total(shopper.id, session)
             shopper.status = Status.QUEUE_READY
             shopper.qtime = 0
 
@@ -156,7 +159,7 @@ def step(sid, CLOCK, session=None):
             else:
                 shopper.browse_mins -= 1
 
-        shopper.cart_count = cart.get_size(shopper.id, session)
+        shopper.cart_count = Cart.get_size(shopper.id, session)
 
     elif shopper.status == Status.DONE:
         today = date(CLOCK.year, CLOCK.month, CLOCK.day)
@@ -171,9 +174,22 @@ def step(sid, CLOCK, session=None):
             stamp=today,
             time=shopper.qtime)
         session.add(qt)
-
     else:
         pass
 
     session.commit()
+    s = session.query(ModelShopper)\
+        .filter(ModelShopper.id == sid).one()
+    print("shopper_{}: quota={}".format(sid, s.quota))
     return shopper.status
+
+
+def print_active_shoppers(session=None):
+    print("ACTIVE SHOPPERS --- ")
+    shoppers = session.query(ModelShopper)\
+        .filter(ModelShopper.status != Status.DONE,
+                ModelShopper.status != Status.INERT)\
+        .order_by(ModelShopper.status).all()
+
+    for s in shoppers:
+        s.print()

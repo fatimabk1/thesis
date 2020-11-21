@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, Date, distinct, select
 import sys
+from enum import IntEnum
 from datetime import timedelta, date
 from sqlalchemy.sql import func
 from math import floor
@@ -10,17 +11,30 @@ CLOCK = Const.CLOCK
 TRUCK_DAYS = Const.TRUCK_DAYS
 
 
+class StockType(IntEnum):
+    PENDING = 0
+    BACK = 1
+    SHELF = 2
+    CART = 3
+
+
 class ModelInventory(Base):
     __tablename__ = "tbl_inventory"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    grp_id = Column(Integer)
-    cart_stock = Column(Integer)
-    shelved_stock = Column(Integer)
-    back_stock = Column(Integer)
-    pending_stock = Column(Integer)
-    available = Column(Date)  # truck -> back storage
-    sell_by = Column(Date)
+    grp_id = Column(Integer, default=None)
+    cart_stock = Column(Integer, default=None)
+    shelved_stock = Column(Integer, default=None)
+    back_stock = Column(Integer, default=None)
+    pending_stock = Column(Integer, default=None)
+    available = Column(Date, default=None)  # truck -> back storage
+    sell_by = Column(Date, default=None)
+
+    def print(self):
+        print("<inv_{}: grp={}, cart={}, shelved={}, back={}, pending={}, available={}, sell_by{}>"
+              .format((self.id), self.grp_id, self.cart_stock,
+                      self.shelved_stock, self.back_stock, self.pending_stock,
+                      self.available, self.sell_by))
 
     def __repr__(self):
         return [self.id,
@@ -32,28 +46,35 @@ class ModelInventory(Base):
                 self.available,
                 self.sell_by]
 
-    def decrement_pending(self, n, session=None):
-        assert(self.pending_stock >= n), "decrement_pending(): invalid n"
-        self.pending_stock -= n
-        self.back_stock += n
-        session.commit()
+    def decrement(self, type, n):
+        if type == StockType.PENDING:
+            self.pending_stock -= n
+        elif type == StockType.BACK:
+            self.back_stock -= n
+        elif type == StockType.SHELF:
+            self.shelved_stock -= n
+        else:
+            assert(type == StockType.CART)
+            self.cart_stock -= n
+        self.clean_up()
 
-    def decrement_back(self, n, session=None):
-        assert(self.back_stock >= n), "decrement_back(): invalid n"
-        self.back_stock -= n
-        self.shelved_stock += n
-        session.commit()
+    def increment(self, type, n):
+        if type == StockType.PENDING:
+            self.pending_stock += n
+        elif type == StockType.BACK:
+            self.back_stock += n
+        elif type == StockType.SHELF:
+            self.shelved_stock += n
+        else:
+            assert(type == StockType.CART)
+            self.cart_stock += n
+        self.clean_up()
 
-    def decrement_shelved(self, n, session=None):
-        assert(self.shelved_stock >= n), "decrement_shelved(): invalid n"
-        self.shelved_stock -= n
-        self.cart_stock += n
-        session.commit()
-
-    def decrement_cart(self, n, session=None):
-        assert(self.cart_stock >= n), "decrement_cart(): invalid n"
-        self.cart_stock -= n
-        if (self.cart_stock == 0 and self.shelved_stock == 0 and self.back_stock == 0):
+    @provide_session  # CHECK that values persist
+    def clean_up(self, session=None):
+        if (self.cart_stock == 0
+                and self.shelved_stock == 0
+                and self.back_stock == 0):
             row = session.query(ModelInventory)\
                 .filter(ModelInventory.id == self.id).one()
             session.delete(row)
@@ -72,18 +93,10 @@ def select_inv(grp_id, session=None):  # FIX
         .order_by(ModelInventory.back_stock).first()
 
     if inv is None:
-        # table = []
-        # inv_lst = session.query(ModelInventory)\
-        #     .filter(ModelInventory.grp_id == grp_id)\
-        #     .order_by(ModelInventory.sell_by)\
-        #     .order_by(ModelInventory.shelved_stock)\
-        #     .order_by(ModelInventory.back_stock)
-        # for item in inv_lst:
-        #     table.append(item.__repr__())
-        # print(tabulate(table, headers=["id", "grp", "cart", "shelf", "back", "pending", "available", "sell-by"]))
         sys.exit("FATAL select_inv(): no inventory fits criteria")
 
-    inv.decrement_shelved(1, session)
+    inv.decrement(StockType.SHELF, 1)
+    inv.increment(StockType.CART, 1)
     return inv.id
 
 
@@ -97,11 +110,12 @@ def toss(grp_id, q, session=None):
     assert(inv_list[0] is not None), "toss(): nonexistent inventory"
 
     for inv in inv_list:
+        inv.print()
         if q == 0:
             break
         else:
             amount = min(inv.shelved_stock, q)
-            inv.decrement_shelved(amount, session)
+            inv.decrement(StockType.SHELF, amount)
             q -= amount
     session.commit()
 
@@ -151,7 +165,8 @@ def restock(grp_id, q, session=None):
             break
         else:
             amount = min(inv.back_stock, q)
-            inv.decrement_back(amount, session)
+            inv.decrement(StockType.BACK, amount)
+            inv.increment(StockType.SHELF, amount)
             q -= amount
         session.commit()
 
@@ -177,7 +192,8 @@ def unload(grp_id, session=None):
             break
         else:
             amount = min(q, inv.pending_stock)
-            inv.decrement_pending(amount, session)
+            inv.decrement(StockType.PENDING, amount)
+            inv.increment(StockType.BACK, amount)
             q -= amount
     session.commit()
 
@@ -205,31 +221,21 @@ def order_inventory(session=None):
     products = session.query(ModelProduct).all()
     today = date(CLOCK.year, CLOCK.month, CLOCK.day)
     order_cost = 0
-    table = []
 
     for prod in products:
         quantity = prod.max_back_stock - prod.order_threshold
-        money = order(prod, quantity, table, session)
+        money = order(prod, quantity, session)
         order_cost += money
         c = ModelCost(stamp=today, value=order_cost, ctype="labor")
         session.add(c)
     session.commit()
 
-    # # print inventory order
-    # print(" -------------------------- ORDER --------------------------")
-    # headers = ["product", "total_quantity", "# pending inv", "inv_quantity"]
-    # print(tabulate(table, headers, tablefmt="fancy_grid"))
 
-
-def order(product, quantity, table, session=None):
+def order(product, quantity, session=None):
     lot_q = product.get_lot_quantity()
     num_lots = floor(quantity / lot_q)
     assert(num_lots >= 2)
     sublots = num_lots * product.get_num_sublots()
-    table.append([product.grp_id,
-                  num_lots * lot_q,
-                  sublots,
-                  floor(lot_q/sublots)])
     create_pending(product.grp_id, sublots, session)
     return product.lot_price * num_lots
 
@@ -239,9 +245,6 @@ def toss_list(session=None):
     lst = session.query(distinct(ModelInventory.grp_id))\
         .filter(ModelInventory.sell_by <= today).all()
     inv_lst = [item for sublist in lst for item in sublist]
-    # for row in lst:
-    #     if row[0] is not None:
-    #         inv_lst.append(row[0])
     return inv_lst
 
 
@@ -252,21 +255,16 @@ def restock_list(session=None):
     for prod in products:
         current_shelved_stock = session.query(
             func.sum(ModelInventory.shelved_stock))\
-            .filter(ModelInventory.grp_id == prod.grp_id).one()[0]
+            .filter(ModelInventory.grp_id == prod.grp_id).one_or_none()
 
-        if current_shelved_stock is None:
+        if current_shelved_stock:
+            current_shelved_stock = current_shelved_stock[0]
+        else:
             current_shelved_stock = 0
 
         if current_shelved_stock < prod.restock_threshold:
-            # table.append([prod.grp_id,
-            #              current_shelved_stock,
-            #              prod.restock_threshold - current_shelved_stock])
             inv_list.append(prod.grp_id)
 
-    # print restocked
-    # print("\n-------------------- RESTOCKED ------------------- ")
-    # headers = ["product", "shelved", "remaining"]
-    # print(tabulate(table, headers, tablefmt="fancy_grid"))
     return inv_list
 
 
@@ -276,7 +274,4 @@ def unload_list(session=None):
         .filter(ModelInventory.available == today)\
         .filter(ModelInventory.pending_stock > 0).distinct()
     inv_list = [item for sublist in lst for item in sublist]
-    # for row in lst:
-    #     if row[0] is not None:
-    #         inv_list.append(row[0])
     return inv_list

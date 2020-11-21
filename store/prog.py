@@ -3,20 +3,21 @@ from datetime import timedelta
 from sqlalchemy import func
 from tabulate import tabulate
 
-from models.base import check_session, check_object_status
-from models.some_models import ModelRevenue, ModelQtime
-from models.employee import Day, Role, Shift
+from models.Base import check_session, check_object_status
+from models.Some_models import ModelRevenue, ModelQtime
+from models.Employee import Day, Role, Shift
 
-from models import ModelShopper, ModelProduct, ModelInventory, ModelEmployee
+from models import ModelShopper, ModelProduct, ModelInventory, ModelEmployee, SingleLane
 from models import Status, provide_session, Session
-from models import cart, inventory, shopper, const, employee
+from models import Cart, Inventory, Shopper, Const, Employee, Lane
+from models.Constants import Shift
 
 
-CLOCK = const.CLOCK
+# CLOCK = Const.CLOCK
 
 
 @provide_session
-def initialize(session=None):
+def initialize_inventory(session=None):
     print("initialize: ", session)
     products = session.query(ModelProduct).all()
     table = []
@@ -25,21 +26,21 @@ def initialize(session=None):
         session.commit()
 
     # inital inventory order
-    inventory.order_inventory(session)
-    # lst = inventory.unload_list(session)
-    # while lst:
-    #     for grp in lst:
-    #         inventory.unload(grp, session)
-    #     lst = inventory.unload_list(session)
-    #     # print("Remaining Unloads:", lst)
+    Inventory.order_inventory(session)
+    lst = Inventory.unload_list(session)
+    while lst:
+        for grp in lst:
+            Inventory.unload(grp, session)
+        lst = Inventory.unload_list(session)
+        # print("Remaining Unloads:", lst)
 
-    # # initial restock
-    # lst = inventory.restock_list(session)
-    # while lst:
-    #     for grp in lst:
-    #         inventory.restock(grp, 1000, session)
-    #         lst = inventory.restock_list(session)
-    #         # print("Remaining Restocks:", lst)
+    # initial restock
+    lst = Inventory.restock_list(session)
+    while lst:
+        for grp in lst:
+            Inventory.restock(grp, 1000, session)
+            lst = Inventory.restock_list(session)
+            # print("Remaining Restocks:", lst)
 
     session.commit()
 
@@ -66,9 +67,9 @@ def advance_all_shoppers(CLOCK, session=None):
 
         for s in shopper_lst:
             sid = s.id
-            stat = shopper.step(sid, CLOCK)
+            stat = Shopper.step(sid, CLOCK)
             print(s.print())
-            # stat = shopper.step(sid, CLOCK, session)
+            # stat = Shopper.step(sid, CLOCK, session)
             table.append(s.__repr__())
 
             if (stat == Status.QUEUEING or
@@ -89,8 +90,8 @@ def advance_all_shoppers(CLOCK, session=None):
                         s.set_status(Status.CHECKOUT)
 
                 elif stat == Status.CHECKOUT:
-                    cart.scan_n(sid, 12, session)
-                    if cart.get_size(sid, session) == 0:
+                    Cart.scan_n(sid, 12, session)
+                    if Cart.get_size(sid, session) == 0:
                         s.set_status(Status.DONE)
 
                 else:
@@ -103,7 +104,7 @@ def advance_all_shoppers(CLOCK, session=None):
                     session.commit()
                     break
                 session.commit()
-            # session.close()
+
         CLOCK = CLOCK + timedelta(minutes=1)
         for row in table:
             row.insert(0, CLOCK.minute)
@@ -234,14 +235,32 @@ def advance_all_employees(CLOCK):
     session.commit()
 
 
+@provide_session
+def advance_all_lanes(lanes, open_lanes, session=None):
+    pass
+    # setup shoppers with full carts
+
+
+@provide_session
+def setup(lanes, session=None):
+    # create & schedule employees
+    for i in range(Const.NUM_EMPLOYEES):
+        Employee.create_employee(session)
+    Employee.make_week_schedule(session)
+
+    # create and open minimum lanes
+    for i in range(Const.MAX_LANES):
+        ln = SingleLane()
+        if i < Const.MIN_LANES:
+            ln.open()
+        lanes[i] = ln
+
+    # create products and stock all inventory
+    initialize_inventory(session)
+    session.commit()
+
+
 if __name__ == "__main__":
-    initialize()
-    advance_all_employees(const.CLOCK)
-    print("\nPaying my amazing employees:")
-    session = Session()
-    emp_lst = session.query(ModelEmployee).all()
-    emp_lst.sort(key=lambda x: x.id)
-    for emp in emp_lst:
-        print("Employee {}: {:.2f}".format(emp.id, emp.calculate_wages()))
-    session.close()
+    initialize_inventory()
+    advance_all_shoppers(Const.CLOCK)
     print("Good Job!")

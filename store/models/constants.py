@@ -1,16 +1,22 @@
 from datetime import datetime, time
-CLOCK = datetime(2019, 9, 15, 9, 0)
+from enum import IntEnum
+
+
+CLOCK = datetime(2019, 9, 15, 10, 0)  # SUNDAY
 TRUCK_DAYS = 0  # initally 3
 EOD_FLAG = False
 
+
 # ------------------------------------------------------------------------------------------------ CONSTANTS & ENUMS
-SUNDAY = 0
-MONDAY = 1
-TUESDAY = 2
-WEDNESDAY = 3
-THURSDAY = 4
-FRIDAY = 6
-SATURDAY = 7
+class Day(IntEnum):
+    SUNDAY = 0
+    MONDAY = 1
+    TUESDAY = 2
+    WEDNESDAY = 3
+    THURSDAY = 4
+    FRIDAY = 5
+    SATURDAY = 6
+
 
 NUM_DAYS = 7	 # 7 days in a week
 DAY_START = 10	 # store opens at 10:00 am
@@ -49,30 +55,52 @@ RUN_TIME = HOURS_RUN * 60		# HOURS_RUN converted to minutes
 # initally min=10, max=50
 SHOPPER_MIN = 1                 # min number of items a shopper will attempt to purchase
 SHOPPER_MAX = 30				# max number of items a shopper will attempt to purchase
-NUM_EMPLOYEES = 30
+NUM_EMPLOYEES = 100
 
 
 WAGE_MIN = 8
 WAGE_MAX = 18
 
 
-def store_before(clock):
-    if time(clock.hour, clock.minute) < time(10, 0):
+# ------------------------------------------------------------- VARS/FUNCTIONS RELATED TO EMPLOYEE SHIFTS & TIME
+
+# specific times an employee works
+class Shift(IntEnum):
+    MORNING = 0  # 8am - 3pm, 7 hours
+    EVENING = 1  # 3pm - 10pm, 7 hours
+    OFF = 2
+
+
+CURRENT_SHIFT = None
+
+
+def shift_change():
+    if CLOCK.hour == 15 and CLOCK.minute == 00:
+        CURRENT_SHIFT = Shift.EVENING  # check that this works
+        return True
+    return False
+
+
+# pre-open, employees work from 8am - 10am
+def store_before():
+    if time(CLOCK.hour, CLOCK.minute) < time(10, 0):
         return True
     else:
         return False
 
 
-def store_open(clock):
-    if (time(clock.hour, clock.minute) >= time(10, 0) and
-            time(clock.hour, clock.minute) < time(8, 0)):
+# store hours: 10am - 8pm
+def store_open():
+    if (time(CLOCK.hour, CLOCK.minute) >= time(10, 0) and
+            time(CLOCK.hour, CLOCK.minute) < time(20, 0)):
         return True
     else:
         return False
 
 
-def store_closed(clock):
-    if time(clock.hour, clock.minute) >= time(8,0):
+# post-close, employees work from 8pm - 10pm
+def store_closed():
+    if time(CLOCK.hour, CLOCK.minute) >= time(20, 0):
         return True
     else:
         return False
