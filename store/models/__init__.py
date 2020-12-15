@@ -9,7 +9,7 @@ from models.Product import ModelProduct, ModelCategory, PRICE
 from models.Inventory import ModelInventory
 from models.Cart import ModelCart
 from models.Shopper import ModelShopper, Status
-from models.Employee import Role, ModelSchedule, ModelEmployee
+from models.Employee import Action, ModelSchedule, ModelEmployee
 from models.Lane import SingleLane
 
 from models import Product, Inventory, Cart, Shopper, Employee, Lane

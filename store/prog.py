@@ -5,7 +5,7 @@ from tabulate import tabulate
 
 from models.Base import check_session, check_object_status
 from models.Some_models import ModelRevenue, ModelQtime
-from models.Employee import Day, Role, Shift
+from models.Employee import Day, Action, Shift
 
 from models import ModelShopper, ModelProduct, ModelInventory, ModelEmployee, SingleLane
 from models import Status, provide_session, Session
@@ -17,32 +17,35 @@ from models.Constants import Shift
 
 
 @provide_session
-def initialize_inventory(session=None):
-    print("initialize: ", session)
+def initialize_products_and_inventory(session=None):
+    print("initializeing products...")
     products = session.query(ModelProduct).all()
-    table = []
     for prod in products:
-        table.append(prod.setup())
-        session.commit()
+        prod.setup()
+    session.commit()
 
     # inital inventory order
     Inventory.order_inventory(session)
     lst = Inventory.unload_list(session)
+    QUANTITY = 0
+    GRP = 1
     while lst:
-        for grp in lst:
-            Inventory.unload(grp, session)
-        lst = Inventory.unload_list(session)
-        # print("Remaining Unloads:", lst)
+        for tpl in lst:
+            Inventory.unload(tpl[GRP], tpl[QUANTITY], 10000, session)
 
     # initial restock
     lst = Inventory.restock_list(session)
     while lst:
-        for grp in lst:
-            Inventory.restock(grp, 1000, session)
-            lst = Inventory.restock_list(session)
-            # print("Remaining Restocks:", lst)
+        for tpl in lst:
+            Inventory.restock(tpl[GRP], tpl[QUANTITY], 1000, session)
 
     session.commit()
+    print("starter inventory:")
+    inv_lst = session.query(ModelInventory)\
+        .order_by(ModelInventory.grp_id)\
+        .order_by(ModelInventory.sell_by).all()
+    for inv in inv_lst:
+        inv.print()
 
 
 @provide_session
@@ -261,6 +264,6 @@ def setup(lanes, session=None):
 
 
 if __name__ == "__main__":
-    initialize_inventory()
+    initialize_products_and_inventory()
     advance_all_shoppers(Const.CLOCK)
     print("Good Job!")

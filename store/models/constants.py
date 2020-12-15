@@ -3,7 +3,7 @@ from enum import IntEnum
 
 
 CLOCK = datetime(2019, 9, 15, 10, 0)  # SUNDAY
-TRUCK_DAYS = 0  # initally 3
+TRUCK_DAYS = 2
 EOD_FLAG = False
 
 

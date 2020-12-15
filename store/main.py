@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 from models import Shopper, Lane, Employee, Inventory, Const
 from models import (ModelShopper,
                     ModelEmployee,
@@ -6,11 +6,10 @@ from models import (ModelShopper,
                     ModelInventory,
                     SingleLane,
                     Status,
-                    Role,
+                    Action,
                     Shift,
                     Day)
 from models.Base import provide_session, Session
-import sys
 
 
 # steps for now, later it will be the constant # of minutes in a day
@@ -87,13 +86,68 @@ def simulate_day(day, lanes, session=None):
                 ln.step(session)
 
         # -------------------------------------------------- advance employees
+        # collect tasks
+        print("collecting tasks...")
+        unload_list = Inventory.unload_list()
+        toss_list = Inventory.toss_list()
+        restock_list = Inventory.restock_list()
+
+        # order tasks lists by priority
+        print("ordering task lists...")
+        todo = []
+        if Const.store_before():
+            todo = [unload_list, restock_list, toss_list]
+        elif Const.store_open():
+            todo = [restock_list, toss_list, unload_list]
+        else:
+            todo = [toss_list, restock_list, unload_list]
+
+        # tuple access
+        QUANTITY = 0
+        GRP = 1
+
+        print("collecting employees...")
         Employee.prepare_employees(session)
         group = session.query(ModelEmployee)\
             .filter(ModelEmployee.role != Role.CASHIER,
                     ModelEmployee.role != Role.IDLE).all()
-        print("advancing employees...")
-        for emp in group:
-            emp.do_task(session)
+        emp_count = len(group)
+
+        i = 0
+        for lst in todo:
+            # get employee
+            emp = group[i]
+            print("---------------------- EMPLOYEE_{} ------------------------" % (emp.id))
+            print("pre_list: ", lst)
+            # assign tasks
+            print("assigning tasks...")
+            count = 0
+            emp_q = emp.stock_speed
+            tasks = []
+            for tpl in lst:
+                if count < emp_q:
+                    tasks.append(tpl)
+                    count += tpl[QUANTITY]
+            emp.set_task(tasks)
+            print("\tassigned tasks: ", tasks)
+            # do task
+            updated_tasks = emp.do_tasks(session)
+            print("\tupdated tasks: ", updated_tasks)
+            # update lst
+            for tpl in updated_tasks:
+                index = [i for i, t in enumerate(lst)
+                         if t[GRP] == tpl[GRP]]
+                if tpl[QUANTITY] == 0:
+                    del lst[index]
+                else:
+                    vals = list(lst[index])
+                    vals[QUANTITY] -= tpl[QUANTITY]
+                    lst[index] = tuple(vals)
+            print("post_list: ", lst)
+            # get next employee
+            i += 1
+            if i == emp_count:
+                break
 
         # -------------------------------------------------- print object statuses
         Shopper.print_active_shoppers(session)
@@ -106,7 +160,7 @@ def simulate_day(day, lanes, session=None):
 
 @provide_session
 def initialize_products_and_inventory(session=None):
-    print("initialize: ", session)
+    print("initializeing products...")
     products = session.query(ModelProduct).all()
     for prod in products:
         prod.setup()
@@ -115,21 +169,25 @@ def initialize_products_and_inventory(session=None):
     # inital inventory order
     Inventory.order_inventory(session)
     lst = Inventory.unload_list(session)
+    QUANTITY = 0
+    GRP = 1
     while lst:
-        for grp in lst:
-            Inventory.unload(grp, session)
-        lst = Inventory.unload_list(session)
-        # print("Remaining Unloads:", lst)
+        for tpl in lst:
+            Inventory.unload(tpl[GRP], tpl[QUANTITY], 10000, session)
 
     # initial restock
     lst = Inventory.restock_list(session)
     while lst:
-        for grp in lst:
-            Inventory.restock(grp, 1000, session)
-            lst = Inventory.restock_list(session)
-            # print("Remaining Restocks:", lst)
+        for tpl in lst:
+            Inventory.restock(tpl[GRP], tpl[QUANTITY], 1000, session)
 
     session.commit()
+    print("starter inventory:")
+    inv_lst = session.query(ModelInventory)\
+        .order_by(ModelInventory.grp_id)\
+        .order_by(ModelInventory.sell_by).all()
+    for inv in inv_lst:
+        inv.print()
 
 
 @provide_session
@@ -150,7 +208,6 @@ def run():
     lanes = []
     setup_lanes_and_employees(lanes)
     initialize_products_and_inventory()
-    # START >>> list inv data for 5 & 3 -- fixing toss
     simulate_day(Day.SUNDAY, lanes)
 
     # for i in range(Const.NUM_DAYS):

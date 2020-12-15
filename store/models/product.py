@@ -78,6 +78,7 @@ class ModelProduct(Base):
     sublot_quantity = Column(Integer)
     sell_by_days = Column(Integer)
     order_threshold = Column(Integer)
+    order_amount = Column(Integer)
 
     # -------------------------------------------- getters and setters
     def get_lot_quantity(self):
@@ -119,18 +120,22 @@ class ModelProduct(Base):
     def set_regular(self):
         self.price_status = PRICE.regular
 
-    def set_threshold(self, session=None):
+    def set_order_threshold(self, session=None):
         '''
-        Sets the minimum amount of product to keep in stock.
-        Based on average quantity sold in the past three days.       
+        Sets the product ordering threshold and amount to order.
+        truck takes 2 days to arrive, so need to order when back stock
+        falls below 2 days worth of product. Order 4 days worth of product
+        or max_back stock, whichever is less.
         '''
         today = datetime(CLOCK.year, CLOCK.month, CLOCK.day, 0, 0)
-        filter_after = today - timedelta(days=3)
+        filter_after = today - timedelta(days=4)
         avg = session.query(func.avg(ModelSold.sold).label("average"))\
             .filter(ModelSold.grp_id == self.grp_id)\
             .filter(ModelSold.date > filter_after).one()
         if avg.average is not None:
-            self.threshold = round(avg.average) + ceil(0.1 * avg.average)
+            self.order_threshold = (2 * round(avg.average))
+            self.order_amount = min((4 * round(avg.average)),
+                                    self.max_back_stock)
 
     def get_sell_by(self):
         noise = timedelta(days=randint(-2, 2))
@@ -149,6 +154,7 @@ class ModelProduct(Base):
         self.max_shelved_stock = self.lot_quantity * 2
         self.max_back_stock = self.lot_quantity * 8
         self.order_threshold = round(self.max_back_stock/2)
+        self.order_amount = None
         self.restock_threshold = round((self.max_shelved_stock / 3) * 2)
         return self.row_order_info()
 

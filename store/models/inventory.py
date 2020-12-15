@@ -100,26 +100,6 @@ def select_inv(grp_id, session=None):  # FIX
     return inv.id
 
 
-def toss(grp_id, q, session=None):
-    today = date(CLOCK.year, CLOCK.month, CLOCK.day)
-    inv_list = session.query(ModelInventory)\
-        .filter(ModelInventory.grp_id == grp_id)\
-        .filter(ModelInventory.sell_by <= today)\
-        .order_by(ModelInventory.sell_by.asc()).all()
-
-    assert(inv_list[0] is not None), "toss(): nonexistent inventory"
-
-    for inv in inv_list:
-        inv.print()
-        if q == 0:
-            break
-        else:
-            amount = min(inv.shelved_stock, q)
-            inv.decrement(StockType.SHELF, amount)
-            q -= amount
-    session.commit()
-
-
 # Returns the max number of items that can be added to shelves.
 def available_shelf_space(grp_id, session=None):
     product = session.query(ModelProduct)\
@@ -144,58 +124,6 @@ def available_back_space(grp_id, session=None):
         return max_back_stock
     else:
         return max_back_stock - back_stock
-
-
-def restock(grp_id, q, session=None):
-    product = session.query(ModelProduct)\
-        .filter(ModelProduct.grp_id == grp_id).one()
-    inv_list = session.query(ModelInventory)\
-        .filter(ModelInventory.grp_id == grp_id)\
-        .filter(ModelInventory.shelved_stock < product.get_sublot_quantity())\
-        .filter(ModelInventory.back_stock > 0)\
-        .order_by(ModelInventory.sell_by)\
-        .order_by(ModelInventory.id).all()
-
-    shelf_space = available_shelf_space(grp_id, session)
-    q = min(q, shelf_space)
-
-    # transfer from back to shelved stock
-    for inv in inv_list:
-        if q == 0:
-            break
-        else:
-            amount = min(inv.back_stock, q)
-            inv.decrement(StockType.BACK, amount)
-            inv.increment(StockType.SHELF, amount)
-            q -= amount
-        session.commit()
-
-
-# unloads one lot of product into back storage
-def unload(grp_id, session=None):
-    # list of inventory to unload
-    product = session.query(ModelProduct)\
-        .filter(ModelProduct.grp_id == grp_id).first()
-    today = date(CLOCK.year, CLOCK.month, CLOCK.day)
-    space = available_back_space(grp_id, session)
-    q = product.get_lot_quantity()
-    inv_list = session.query(ModelInventory)\
-        .filter(ModelInventory.grp_id == grp_id)\
-        .filter(ModelInventory.available == today)\
-        .filter(ModelInventory.pending_stock > 0)\
-        .order_by(ModelInventory.id).all()
-
-    # unload
-    q = min(space, q)
-    for inv in inv_list:
-        if q == 0:
-            break
-        else:
-            amount = min(q, inv.pending_stock)
-            inv.decrement(StockType.PENDING, amount)
-            inv.increment(StockType.BACK, amount)
-            q -= amount
-    session.commit()
 
 
 # creates a set of pending inventory entries for ordered stock
@@ -223,11 +151,15 @@ def order_inventory(session=None):
     order_cost = 0
 
     for prod in products:
-        quantity = prod.max_back_stock - prod.order_threshold
-        money = order(prod, quantity, session)
-        order_cost += money
-        c = ModelCost(stamp=today, value=order_cost, ctype="labor")
-        session.add(c)
+        back_space = available_back_space(prod.grp_id, session)
+        back_stock = prod.max_back_stock - back_space
+        if back_space > prod.order_threshold:
+            amount = (prod.order_amount
+                      or (prod.order_threshold * 1.5 - back_stock))
+            money = order(prod, amount, session)
+            order_cost += money
+            c = ModelCost(stamp=today, value=order_cost, ctype="stock")
+            session.add(c)
     session.commit()
 
 
@@ -240,38 +172,153 @@ def order(product, quantity, session=None):
     return product.lot_price * num_lots
 
 
+# returns updated q and emp_q
+def restock(grp, q, emp_q, session=None):
+    '''
+    q is total quantity that needs to be restocked for grp
+    emp_q is max amount that an employee can restock in one time step
+    returns updated q, the remaining quantity for task completion
+    returns updated emp_q, remaining quantity employee can restock
+    '''
+    product = session.query(ModelProduct)\
+        .filter(ModelProduct.grp_id == grp).one()
+    inv_list = session.query(ModelInventory)\
+        .filter(ModelInventory.grp_id == grp)\
+        .filter(ModelInventory.shelved_stock < product.get_sublot_quantity())\
+        .filter(ModelInventory.back_stock > 0)\
+        .order_by(ModelInventory.sell_by)\
+        .order_by(ModelInventory.id).all()
+
+    for inv in inv_list:
+        amt = min(inv.back_stock, emp_q, q)
+        inv.decrement(StockType.BACK, amt)
+        inv.increment(StockType.SHELF, amt)
+        q -= amt
+        emp_q -= amt
+        if emp_q == 0 or q == 0:  # employee or task finished
+            break
+    session.commit()
+    return q, emp_q
+
+
+# returns updated q and emp_q
+def toss(grp, q, emp_q, session=None):
+    today = date(CLOCK.year, CLOCK.month, CLOCK.day)
+
+    # toss inventory for a grp
+    inv_list = session.query(ModelInventory)\
+        .filter(ModelInventory.grp_id == grp)\
+        .filter(ModelInventory.sell_by <= today)\
+        .order_by(ModelInventory.sell_by.asc()).all()
+    assert(inv_list[0] is not None), "toss(): nonexistent inventory"
+
+    # toss inventory in record inv
+    for inv in inv_list:
+        inv.print()
+        # toss expired shelved stock
+        amt = min(emp_q, q, inv.shelved_stock)
+        inv.decrement(StockType.SHELF, amt)
+        emp_q -= amt
+        q -= amt
+        # toss expired back stock
+        amt = min(emp_q, q, inv.back_stock)
+        inv.decrement(StockType.BACK, amt)
+        emp_q -= amt
+        q -= amt
+        # toss expired pending stock
+        amt = min(emp_q, q, inv.pending_stock)
+        inv.decrement(StockType.PENDING, amt)
+        emp_q -= amt
+        q -= amt
+
+        if emp_q == 0 or q == 0:  # employee or task finished
+            break
+
+    session.commit()
+    return q, emp_q
+
+
+# returns updated q and emp_q
+def unload(grp, q, emp_q, session=None):
+    # list of inventory to unload
+    today = date(CLOCK.year, CLOCK.month, CLOCK.day)
+    prod = session.query(ModelProduct)\
+        .filter(ModelProduct.grp_id == grp).one()
+    inv_list = session.query(ModelInventory)\
+        .filter(ModelInventory.grp_id == grp)\
+        .filter(ModelInventory.available == today)\
+        .filter(ModelInventory.pending_stock > 0)\
+        .order_by(ModelInventory.id).all()
+
+    # unload
+    q = q * prod.get_lot_quantity()
+    for inv in inv_list:
+        amt = min(q, emp_q, inv.pending_stock)
+        inv.increment(StockType.BACK, amt)
+        inv.decrement(StockType.PENDING, amt)
+        emp_q -= amt
+        q -= amt
+        if emp_q == 0 or q == 0:  # employee or task finished
+            break
+    session.commit()
+    q = q / prod.get_lot_quantity()
+    return q, emp_q
+
+
+# returns a list of tuples in the format (quantity, grp, action)
 def toss_list(session=None):
     today = date(CLOCK.year, CLOCK.month, CLOCK.day)
-    lst = session.query(distinct(ModelInventory.grp_id))\
-        .filter(ModelInventory.sell_by <= today).all()
-    inv_lst = [item for sublist in lst for item in sublist]
-    return inv_lst
+
+    tossme = []
+    products = session.query(ModelProduct.grp_id).all()
+    for prod in products:
+        lst = session.query(ModelInventory)\
+            .filter(ModelInventory.grp_id == prod.grp_id)\
+            .filter(ModelInventory.sell_by <= today).all()
+
+        q = 0
+        for inv in lst:
+            q += (inv.shelved_stock + inv.back_stock + inv.pending_stock)
+        t = tuple(q, prod.grp_id, "TOSS")
+        tossme.append(t)
+    print(tossme)
+    return tossme
 
 
+# returns a list of tuples in the format (quantity, grp, action)
 def restock_list(session=None):
-    # table = []
-    inv_list = []
+    restockme = []
     products = session.query(ModelProduct).all()
     for prod in products:
-        current_shelved_stock = session.query(
-            func.sum(ModelInventory.shelved_stock))\
-            .filter(ModelInventory.grp_id == prod.grp_id).one_or_none()
+        shelf_space = available_shelf_space(prod.grp_id, session)
+        back_stock = session.query(
+            func.sum(ModelInventory.back_stock))\
+            .filter(ModelInventory.grp_id == prod.grp_id).one()[0]
 
-        if current_shelved_stock:
-            current_shelved_stock = current_shelved_stock[0]
-        else:
-            current_shelved_stock = 0
-
-        if current_shelved_stock < prod.restock_threshold:
-            inv_list.append(prod.grp_id)
-
-    return inv_list
+        if prod.get_max_shelved_stock - shelf_space <= prod.restock_threshold:
+            t = tuple(min(back_stock, shelf_space), prod.grp_id, "RESTOCK")
+            restockme.append(t)
+    print(restockme)
+    return restockme
 
 
+# returns a list of tuples in the format (quantity, grp, action)
 def unload_list(session=None):
     today = date(CLOCK.year, CLOCK.month, CLOCK.day)
-    lst = session.query(ModelInventory.grp_id)\
-        .filter(ModelInventory.available == today)\
-        .filter(ModelInventory.pending_stock > 0).distinct()
-    inv_list = [item for sublist in lst for item in sublist]
-    return inv_list
+    products = session.query(ModelProduct).all()
+    unloadme = []
+    for prod in products:
+        quantity = session.query(func.sum(ModelInventory.pending_stock))\
+            .filter(ModelInventory.grp_id == prod.grp_id)\
+            .filter(ModelInventory.available == today)\
+            .filter(ModelInventory.pending_stock > 0).one()
+        print(quantity)
+        # NOTE: TRUCK DAYS = 2, NEED SPECIAL WORK-AROUND
+        # FOR INITIALIZING DATA SO THAT AVAILABLE = TODAY AM
+        exit(1)
+        quantity = quantity / prod.get_lot_quantity()
+        print("unload_list: lots to unload = ", quantity)
+        t = tuple(quantity, prod.grp_id, "UNLOAD")
+        unloadme.append(t)
+    print(unloadme)
+    return unloadme
