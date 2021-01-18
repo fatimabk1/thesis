@@ -131,51 +131,44 @@ class ModelEmployee(Base):
     def do_tasks(self, session=None):
         assert(self.tasks is not None)
 
-        QUANTITY = 0
-        GRP = 1
+        GRP = 0
+        QUANTITY = 1
         ACTION = 2
-        prev, curr, emp_q = None, None, None
-        for i, tpl in enumerate(self.tasks):
-            # set initial emp_q, prev, curr
-            if i == 0:
-                prev = tpl[ACTION]
-                if tpl[ACTION] == Action.UNLOAD:
-                    emp_q = self.unload_speed
-                else:
-                    emp_q = self.stock_speed
-            curr = tpl[ACTION]
+        emp_q = None
 
-            # Change emp_q units when changing Action (# lots vs # items)
-            if (curr != prev and
-                    (curr == Action.UNLOAD or prev == Action.UNLOAD)):
-                # swich from other to unload
-                if curr == Action.UNLOAD:
-                    ratio = emp_q / self.stock_speed
-                    emp_q = round(self.unload_speed - ratio * self.unload_speed)
-                # switch from unload to other
-                else:
-                    ratio = emp_q / self.unload_speed
-                    emp_q = round(self.stock_speed - ratio * self.stock_speed)
+        for i, tpl in enumerate(self.tasks):
+            if tpl[ACTION] == Action.UNLOAD:
+                emp_q = self.unload_speed
+            else:
+                emp_q = self.stock_speed
 
             # execute task
             q = 0
-            if tpl[ACTION] == Action.RESTOCK:
-                q, emp_q = Inventory.restock(tpl[GRP], tpl[QUANTITY], emp_q)
-            elif tpl[ACTION] == Action.TOSS:
-                q, emp_q = Inventory.toss(tpl[GRP], tpl[QUANTITY], emp_q)
-            elif tpl[ACTION] == Action.UNLOAD:
+            if tpl[ACTION] == "RESTOCK":
+                q, emp_q = Inventory.restock(tpl[GRP], tpl[QUANTITY], emp_q, session)
+                print("\tRESTOCK: q = {}, emp_q = {}".format(q, emp_q))
+            elif tpl[ACTION] == "TOSS":
+                q, emp_q = Inventory.toss(tpl[GRP], tpl[QUANTITY], emp_q, session)
+                print("\tTOSS: q = {}, emp_q = {}".format(q, emp_q))
+            elif tpl[ACTION] == "UNLOAD":
                 emp_q = self.unload_speed
-                q, emp_q = Inventory.unload(tpl[GRP], tpl[QUANTITY], emp_q)
+                q, emp_q = Inventory.unload(tpl[GRP], tpl[QUANTITY], emp_q, session)
+                print("\tUNLOAD: q = {}, emp_q = {}".format(q, emp_q))
+            else:
+                print("tpl[ACTION] = ", tpl[ACTION])
+                exit(2)
 
             # update task status
-            t = tuple(q, tpl[GRP], tpl[ACTION])
+            t = (tpl[GRP], q, tpl[ACTION])
             self.tasks[i] = t
-            prev = curr
+            # prev = curr
 
             if emp_q == 0:
                 break
         session.commit()
-        return self.tasks
+        ret = self.tasks
+        self.tasks = None
+        return ret
 
     def set_tasks(self, tasks):
         self.tasks = tasks
@@ -225,12 +218,12 @@ def create_employee(session=None):
     session.commit()
 
 
-# assigns employee to CASHIER role & lane;
+# assigns employee to CASHIER action & lane;
 # called by a lane object
 @provide_session
 def request_employee(lid, session=None):
     emps = session.query(ModelEmployee)\
-        .filter(ModelEmployee.role != Action.CASHIER)\
+        .filter(ModelEmployee.action != Action.CASHIER)\
         .filter(ModelEmployee.shift == Const.CURRENT_SHIFT).all()
     if emps:
         e = emps.pop()
@@ -245,7 +238,7 @@ def request_employee(lid, session=None):
             .format(Const.CURRENT_SHIFT))
 
 
-# assign employee a new role & removes lane
+# assign employee a new action & removes lane
 @provide_session
 def return_employee(eid, session=None):
     e = session.query(ModelEmployee)\
@@ -255,12 +248,12 @@ def return_employee(eid, session=None):
     session.commit()
 
 
-# returns true for if employee has a CASHIER role and lane lid
+# returns true for if employee has a CASHIER action and lane lid
 @provide_session
 def valid_cashier(eid, lid, session=None):
     emp = session.query(ModelEmployee)\
         .filter(ModelEmployee.id == eid).one()
-    if emp.role == Action.CASHIER and emp.lane == lid:
+    if emp.action == Action.CASHIER and emp.lane == lid:
         return True
     else:
         return False
@@ -314,7 +307,7 @@ def set_day_schedule(day, session=None):
 
 
 def print_active_employees(session=None):
-    print("ACTIVE EMPLOYEES --- ")
+    print("\t--- ACTIVE EMPLOYEES --- ")
     emps = session.query(ModelEmployee)\
         .filter(ModelEmployee.shift == Const.CURRENT_SHIFT)\
         .filter(ModelEmployee.action != Action.IDLE)\

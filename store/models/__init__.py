@@ -5,7 +5,7 @@ from models.Constants import Shift, Day
 
 from models.Cost import ModelCost
 from models.Some_models import ModelRevenue, ModelQtime
-from models.Product import ModelProduct, ModelCategory, PRICE
+from models.Product import ModelProduct, PRICE, ModelCategory
 from models.Inventory import ModelInventory
 from models.Cart import ModelCart
 from models.Shopper import ModelShopper, Status

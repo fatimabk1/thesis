@@ -1,10 +1,13 @@
 from datetime import datetime, time
 from enum import IntEnum
 
-
 CLOCK = datetime(2019, 9, 15, 10, 0)  # SUNDAY
 TRUCK_DAYS = 2
 EOD_FLAG = False
+PRODUCT_COUNT = 100  # total # of products in db 3k
+CATEGORY_COUNT = 10  # total # of categories in db 100
+# PRODUCTS_PER_CATEGORY = int(PRODUCT_COUNT / CATEGORY_COUNT) 3000
+PRODUCTS_PER_CATEGORY = 10
 
 
 # ------------------------------------------------------------------------------------------------ CONSTANTS & ENUMS
@@ -21,12 +24,9 @@ class Day(IntEnum):
 NUM_DAYS = 7	 # 7 days in a week
 DAY_START = 10	 # store opens at 10:00 am
 
-PRODUCT_COUNT = 20  # total # of products in db
-CATEGORY_COUNT = 5  # total # of categories in db
-
 
 MANAGE_FREQUENCY = 1  # manage() evaluates average lane qtime and qlen every MANAGE_FREQUENCY minutes
-MANAGE_DELAY = 15  # after manage() is executed, manage is not called again for at least MANAGE_DELAY minutes
+MANAGE_DELAY = None  # after manage() is executed, manage is not called again for at least MANAGE_DELAY minutes
 
 QTIME_RANGE = 7  # average queue time is calculated over the last QTIME_RANGE minutes
 QTIME_IDEAL = 8  # the ideal amount of time a consumer is willing to wait in line (close to max, but not quite), in minutes
@@ -53,8 +53,8 @@ HOURS_RUN = 1					# hours to run simulation
 RUN_TIME = HOURS_RUN * 60		# HOURS_RUN converted to minutes
 
 # initally min=10, max=50
-SHOPPER_MIN = 1                 # min number of items a shopper will attempt to purchase
-SHOPPER_MAX = 30				# max number of items a shopper will attempt to purchase
+SHOPPER_MIN = 10                # min number of items a shopper will attempt to purchase
+SHOPPER_MAX = 30                # max number of items a shopper will attempt to purchase
 NUM_EMPLOYEES = 100
 
 

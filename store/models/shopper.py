@@ -1,3 +1,5 @@
+from sqlalchemy import func
+from models import ModelInventory
 from models.Base import check_session, check_object_status
 from models.Cart import ModelCart
 from models.Product import ModelProduct, ModelCategory
@@ -62,10 +64,20 @@ class ModelShopper(Base):
         elif self.status == 4:
             stat_string = "DONE"
 
+        browse, cart, ln, qt = self.browse_mins, self.cart_count, self.lane, self.qtime
+        if self.browse_mins is None:
+            browse = "NONE"
+        if self.cart_count is None:
+            cart = "NONE"
+        if self.lane is None:
+            ln = "NONE"
+        if self.qtime is None:
+            qt = "NONE"
+
         print("<shopper_{}_{}: start={}, browse={}, quota={}, cart_count={}, lane={}, qtime={}, total={}>"
               .format(self.id, stat_string, self.start_min,
-                      self.browse_mins, self.quota, self.cart_count,
-                      self.lane, self.qtime, self.total))
+                      browse, self.quota, cart,
+                      ln, qt, self.total))
 
     def __repr__(self):
         stat_string = ""
@@ -112,8 +124,6 @@ class ModelShopper(Base):
             .filter(ModelProduct.category == cat).all()
         prod = prod[r]
         Cart.add_item(self.id, prod.grp_id, session)
-        # print("\t\tgrp = {}, cart = {}"
-        #       .format(prod.grp_id, Cart.get_size(self.id)))
 
     def increment_qtime(self, session=None):
         self.qtime += 1
@@ -178,18 +188,27 @@ def step(sid, session=None):
         pass
 
     session.commit()
-    s = session.query(ModelShopper)\
-        .filter(ModelShopper.id == sid).one()
-    print("shopper_{}: quota={}".format(sid, s.quota))
+    # s = session.query(ModelShopper)\
+    #     .filter(ModelShopper.id == sid).one()
+    # print("shopper_{}: quota={}".format(sid, s.quota))
     return shopper.status
 
 
 def print_active_shoppers(session=None):
-    print("ACTIVE SHOPPERS --- ")
+    print("\t--- ACTIVE SHOPPERS --- ")
+    count = session.query(func.count(ModelShopper.id), ModelShopper.status)\
+        .group_by(ModelShopper.status)\
+        .order_by(ModelShopper.status).all()
     shoppers = session.query(ModelShopper)\
         .filter(ModelShopper.status != Status.DONE,
-                ModelShopper.status != Status.INERT)\
+                ModelShopper.status != Status.INERT,
+                ModelShopper.status != Status.SHOPPING)\
         .order_by(ModelShopper.status).all()
-
+    count = [sublist[0] for sublist in count]
+    while len(count) < 6:
+        count.append(0)
+    print("COUNT: inert = {}, shopping = {}, qready = {}, queueing = {}, checkout = {}, done = {}"\
+          .format(count[0], count[1], count[2], count[3], count[4], count[5]))
     for s in shoppers:
+        print("\there come the shoppers:")
         s.print()

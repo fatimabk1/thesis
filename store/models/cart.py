@@ -67,24 +67,17 @@ def add_item(sid, grp_id, session=None):
 
 
 def scan_n(sid, n, session=None):
-    print("in scan_n")
     # print_cart(sid, session)
-    # print("starting to scan")
     cart_list = session.query(ModelCart)\
         .filter(ModelCart.shopper_id == sid)\
         .order_by(ModelCart.id).all()
 
     for row in cart_list:
-        check_object_status(row)
         if n == 0:
-            print("n = {}".format(n))
             break
         session.delete(row)
-        check_object_status(row)
-        check_session(session)
         n -= 1
         session.commit()
-    print("end of scan_n")
     return n
 
 

@@ -1,9 +1,11 @@
 from datetime import timedelta
-from models import Shopper, Lane, Employee, Inventory, Const
+from sqlalchemy import func
+from models import Shopper, Lane, Employee, Inventory, Const, Product
 from models import (ModelShopper,
                     ModelEmployee,
                     ModelProduct,
                     ModelInventory,
+                    ModelCategory,
                     SingleLane,
                     Status,
                     Action,
@@ -30,11 +32,7 @@ def simulate_day(day, lanes, session=None):
         if Const.store_open() and i % 60 == 0:
             print("creating shoppers...")
             # num_shoppers = something based on busyness -- lookup in Const?
-            # create shoppers
-            for i in range(30):
-                s = ModelShopper()
-                session.add(s)
-            session.commit()
+            Shopper.create(300, session)
 
         # -------------------------------------------------- advance shoppers
         # do not admit shoppers after store is closed
@@ -72,7 +70,7 @@ def simulate_day(day, lanes, session=None):
         # -------------------------------------------------- advance lanes
         # lanes are open for store hours and post-close lingering shoppers
         if Const.store_open() or shopper_group:
-            open_lanes = Lane.manage(lanes, open_lanes)  # expand & open -OR- collapse
+            open_lanes = Lane.manage(lanes, open_lanes, session)  # expand & open -OR- collapse
             if Const.shift_change():
                 print("shift change!")
                 Lane.shift_change(open_lanes, session)
@@ -87,10 +85,13 @@ def simulate_day(day, lanes, session=None):
 
         # -------------------------------------------------- advance employees
         # collect tasks
-        print("collecting tasks...")
-        unload_list = Inventory.unload_list()
-        toss_list = Inventory.toss_list()
-        restock_list = Inventory.restock_list()
+        print("\ncollecting tasks...")
+        unload_list = Inventory.unload_list(session)
+        print("unload list: ", unload_list)
+        toss_list = Inventory.toss_list(session)
+        print("toss list: ", toss_list)
+        restock_list = Inventory.restock_list(session)
+        print("restock list: ", restock_list)
 
         # order tasks lists by priority
         print("ordering task lists...")
@@ -101,93 +102,147 @@ def simulate_day(day, lanes, session=None):
             todo = [restock_list, toss_list, unload_list]
         else:
             todo = [toss_list, restock_list, unload_list]
+        # todo = [item for sublist in todo for item in sublist]  # flatten into list of tuples
 
         # tuple access
-        QUANTITY = 0
-        GRP = 1
+        GRP = 0
+        QUANTITY = 1
 
         print("collecting employees...")
-        Employee.prepare_employees(session)
         group = session.query(ModelEmployee)\
-            .filter(ModelEmployee.role != Role.CASHIER,
-                    ModelEmployee.role != Role.IDLE).all()
+            .filter(ModelEmployee.action != Action.CASHIER).all()
         emp_count = len(group)
+        assert(emp_count > 0)
 
         i = 0
+        emp = group[i]
         for lst in todo:
-            # get employee
-            emp = group[i]
-            print("---------------------- EMPLOYEE_{} ------------------------" % (emp.id))
-            print("pre_list: ", lst)
-            # assign tasks
-            print("assigning tasks...")
-            count = 0
-            emp_q = emp.stock_speed
-            tasks = []
-            for tpl in lst:
-                if count < emp_q:
-                    tasks.append(tpl)
-                    count += tpl[QUANTITY]
-            emp.set_task(tasks)
-            print("\tassigned tasks: ", tasks)
-            # do task
-            updated_tasks = emp.do_tasks(session)
-            print("\tupdated tasks: ", updated_tasks)
-            # update lst
-            for tpl in updated_tasks:
-                index = [i for i, t in enumerate(lst)
-                         if t[GRP] == tpl[GRP]]
-                if tpl[QUANTITY] == 0:
-                    del lst[index]
+            if not lst:
+                print("\tno tasks in lst")
+                continue
+
+            else:
+                print("---------------------- EMPLOYEE_{} ------------------------".format(emp.id))
+                # print("pre_list: ", lst)
+
+                # assign tasks
+                print("assigning tasks...")
+                count = 0
+                emp_q = emp.stock_speed
+                tasks = []
+                for tpl in lst:
+                    if count < emp_q:
+                        tasks.append(tpl)
+                        count += tpl[QUANTITY]
+                emp.set_tasks(tasks)
+                print("\tassigned tasks: ", tasks)
+
+                # do task
+                updated_tasks = emp.do_tasks(session)
+                print("\tupdated tasks: ", updated_tasks)
+
+                # update lst
+                for tpl in updated_tasks:
+                    index = [i for i, t in enumerate(lst)
+                             if t[GRP] == tpl[GRP]][0]
+                    if tpl[QUANTITY] == 0:
+                        del lst[index]
+                    else:
+                        vals = list(lst[index])
+                        vals[QUANTITY] -= tpl[QUANTITY]
+                        lst[index] = (vals)
+                # print("post_list: ", lst)
+
+                # get next employee
+                i += 1
+                if i == emp_count:
+                    break
                 else:
-                    vals = list(lst[index])
-                    vals[QUANTITY] -= tpl[QUANTITY]
-                    lst[index] = tuple(vals)
-            print("post_list: ", lst)
-            # get next employee
-            i += 1
-            if i == emp_count:
-                break
+                    emp = group[i]
 
         # -------------------------------------------------- print object statuses
+        print("\n***************************** STATUS ***************************************")
         Shopper.print_active_shoppers(session)
-        Employee.print_active_employees(session)
+        # Employee.print_active_employees(session)
         Lane.print_active_lanes(lanes)
+        # Inventory.print_stock_status(session)
         Const.CLOCK += timedelta(minutes=1)
 
     print("Day complete. Good Job!!!")
 
 
+# initialze categories, products, and inventory
 @provide_session
-def initialize_products_and_inventory(session=None):
-    print("initializeing products...")
-    products = session.query(ModelProduct).all()
-    for prod in products:
-        prod.setup()
+def initialize(session=None):
+    for i in range(Const.CATEGORY_COUNT):
+        c = ModelCategory()
+        session.add(c)
     session.commit()
+
+    print("creating categories and products...")
+    for i in range(Const.CATEGORY_COUNT):
+        c = session.query(ModelCategory)\
+            .filter(ModelCategory.id == i+1).one()
+        for j in range(Const.PRODUCTS_PER_CATEGORY):
+            p = ModelProduct()
+            p.setup(c.id)
+            session.add(p)
+            c.count += 1
+        session.commit()
 
     # inital inventory order
+    Const.TRUCK_DAYS = 0  # make immediately available
+    print("ordering inventory...")
     Inventory.order_inventory(session)
+    Const.TRUCK_DAYS = 2
+    print("unloading inventory...")
     lst = Inventory.unload_list(session)
-    QUANTITY = 0
-    GRP = 1
-    while lst:
-        for tpl in lst:
-            Inventory.unload(tpl[GRP], tpl[QUANTITY], 10000, session)
+    GRP = 0
+    QUANTITY = 1
+    # ACTION = 2
+
+    # confirm unload lst
+    print("beginning to UNLOAD tuples...")
+    for tpl in lst:
+        print("\t", tpl)
+        q, emp_q = Inventory.unload(tpl[GRP], tpl[QUANTITY], 1000000, session)
+        # print("q = {}, emp_q = {}".format(q, emp_q))
+        vals = session.query(func.sum(ModelInventory.pending_stock),
+                             func.sum(ModelInventory.back_stock))\
+            .filter(ModelInventory.grp_id == tpl[GRP]).one()
+        pending, back = vals[0], vals[1]
+        # print("pending = {}, back = {}".format(pending, back))
+        prod = session.query(ModelProduct)\
+            .filter(ModelProduct.grp_id == tpl[GRP]).one()
+        assert(pending == 0)
+        assert(back >= tpl[QUANTITY] * prod.get_lot_quantity())
 
     # initial restock
+    print("beginning to RESTOCK tuples...")
     lst = Inventory.restock_list(session)
-    while lst:
-        for tpl in lst:
-            Inventory.restock(tpl[GRP], tpl[QUANTITY], 1000, session)
+    for tpl in lst:
+        print("\t", tpl)
+        Inventory.restock(tpl[GRP], tpl[QUANTITY], 100000, session)
+        shelf = session.query(func.sum(ModelInventory.shelved_stock))\
+            .filter(ModelInventory.grp_id == tpl[GRP]).one()[0]
+        prod = session.query(ModelProduct)\
+            .filter(ModelProduct.grp_id == tpl[GRP]).one()
+        assert(shelf == prod.get_max_shelved_stock())
 
     session.commit()
-    print("starter inventory:")
-    inv_lst = session.query(ModelInventory)\
-        .order_by(ModelInventory.grp_id)\
-        .order_by(ModelInventory.sell_by).all()
-    for inv in inv_lst:
-        inv.print()
+    print("starter inventory completed.")
+    # print("starter inventory:")
+    # inv_lst = session.query(ModelInventory)\
+    #     .order_by(ModelInventory.grp_id)\
+    #     .order_by(ModelInventory.sell_by)\
+    #     .order_by(ModelInventory.id).all()
+    # prev = inv_lst[0].grp_id
+    # for inv in inv_lst:
+    #     curr = inv.grp_id
+    #     if prev != curr:
+    #         print("\n")
+    #     inv.print()
+    #     prev = inv.grp_id
 
 
 @provide_session
@@ -207,7 +262,8 @@ def setup_lanes_and_employees(lanes, session=None):
 def run():
     lanes = []
     setup_lanes_and_employees(lanes)
-    initialize_products_and_inventory()
+    initialize()
+    Inventory.print_stock_status()
     simulate_day(Day.SUNDAY, lanes)
 
     # for i in range(Const.NUM_DAYS):

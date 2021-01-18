@@ -17,6 +17,812 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: price; Type: TYPE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE TYPE public.price AS ENUM (
+    'regular',
+    'sale'
+);
+
+
+ALTER TYPE public.price OWNER TO fatimakahbi;
+
+SET default_tablespace = '';
+
+SET default_with_oids = false;
+
+--
+-- Name: tbl_cart; Type: TABLE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE TABLE public.tbl_cart (
+    id integer NOT NULL,
+    shopper_id integer,
+    inventory_id integer,
+    grp_id integer
+);
+
+
+ALTER TABLE public.tbl_cart OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_cart_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.tbl_cart_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tbl_cart_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_cart_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.tbl_cart_id_seq OWNED BY public.tbl_cart.id;
+
+
+--
+-- Name: tbl_category; Type: TABLE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE TABLE public.tbl_category (
+    id integer NOT NULL,
+    sell_by integer,
+    count integer
+);
+
+
+ALTER TABLE public.tbl_category OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_category_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.tbl_category_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tbl_category_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_category_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.tbl_category_id_seq OWNED BY public.tbl_category.id;
+
+
+--
+-- Name: tbl_cost; Type: TABLE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE TABLE public.tbl_cost (
+    cost_id integer NOT NULL,
+    stamp date,
+    value double precision,
+    ctype character varying(30)
+);
+
+
+ALTER TABLE public.tbl_cost OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_cost_cost_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.tbl_cost_cost_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tbl_cost_cost_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_cost_cost_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.tbl_cost_cost_id_seq OWNED BY public.tbl_cost.cost_id;
+
+
+--
+-- Name: tbl_employee; Type: TABLE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE TABLE public.tbl_employee (
+    id integer NOT NULL,
+    shift integer,
+    action integer,
+    tasks json,
+    lane integer,
+    checkout_speed integer,
+    stock_speed integer,
+    unload_speed integer,
+    hourly_wage integer,
+    time_worked integer
+);
+
+
+ALTER TABLE public.tbl_employee OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_employee_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.tbl_employee_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tbl_employee_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_employee_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.tbl_employee_id_seq OWNED BY public.tbl_employee.id;
+
+
+--
+-- Name: tbl_inventory; Type: TABLE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE TABLE public.tbl_inventory (
+    id integer NOT NULL,
+    grp_id integer,
+    cart_stock integer,
+    shelved_stock integer,
+    back_stock integer,
+    pending_stock integer,
+    available date,
+    sell_by date
+);
+
+
+ALTER TABLE public.tbl_inventory OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_inventory_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.tbl_inventory_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tbl_inventory_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_inventory_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.tbl_inventory_id_seq OWNED BY public.tbl_inventory.id;
+
+
+--
+-- Name: tbl_product; Type: TABLE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE TABLE public.tbl_product (
+    grp_id integer NOT NULL,
+    category integer,
+    max_shelved_stock integer,
+    max_back_stock integer,
+    restock_threshold integer,
+    regular_price real,
+    sale_price real,
+    price_status public.price,
+    lot_price real,
+    lot_quantity integer,
+    sublots integer,
+    sublot_quantity integer,
+    sell_by_days integer,
+    order_threshold integer,
+    order_amount integer
+);
+
+
+ALTER TABLE public.tbl_product OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_product_grp_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.tbl_product_grp_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tbl_product_grp_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_product_grp_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.tbl_product_grp_id_seq OWNED BY public.tbl_product.grp_id;
+
+
+--
+-- Name: tbl_qtime; Type: TABLE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE TABLE public.tbl_qtime (
+    id integer NOT NULL,
+    lane integer,
+    stamp timestamp without time zone,
+    "time" integer
+);
+
+
+ALTER TABLE public.tbl_qtime OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_qtime_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.tbl_qtime_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tbl_qtime_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_qtime_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.tbl_qtime_id_seq OWNED BY public.tbl_qtime.id;
+
+
+--
+-- Name: tbl_revenue; Type: TABLE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE TABLE public.tbl_revenue (
+    id integer NOT NULL,
+    stamp timestamp without time zone,
+    value double precision
+);
+
+
+ALTER TABLE public.tbl_revenue OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_revenue_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.tbl_revenue_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tbl_revenue_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_revenue_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.tbl_revenue_id_seq OWNED BY public.tbl_revenue.id;
+
+
+--
+-- Name: tbl_schedule; Type: TABLE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE TABLE public.tbl_schedule (
+    id integer NOT NULL,
+    employee_id integer,
+    day integer,
+    shift integer
+);
+
+
+ALTER TABLE public.tbl_schedule OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_schedule_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.tbl_schedule_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tbl_schedule_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_schedule_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.tbl_schedule_id_seq OWNED BY public.tbl_schedule.id;
+
+
+--
+-- Name: tbl_shopper; Type: TABLE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE TABLE public.tbl_shopper (
+    id integer NOT NULL,
+    start_min integer,
+    browse_mins integer,
+    quota integer,
+    cart_count integer,
+    lane integer,
+    qtime integer,
+    status integer,
+    total double precision
+);
+
+
+ALTER TABLE public.tbl_shopper OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_shopper_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.tbl_shopper_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tbl_shopper_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_shopper_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.tbl_shopper_id_seq OWNED BY public.tbl_shopper.id;
+
+
+--
+-- Name: tbl_sold; Type: TABLE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE TABLE public.tbl_sold (
+    id integer NOT NULL,
+    grp_id integer,
+    date date,
+    sold integer
+);
+
+
+ALTER TABLE public.tbl_sold OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_sold_id_seq; Type: SEQUENCE; Schema: public; Owner: fatimakahbi
+--
+
+CREATE SEQUENCE public.tbl_sold_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tbl_sold_id_seq OWNER TO fatimakahbi;
+
+--
+-- Name: tbl_sold_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: fatimakahbi
+--
+
+ALTER SEQUENCE public.tbl_sold_id_seq OWNED BY public.tbl_sold.id;
+
+
+--
+-- Name: tbl_cart id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_cart ALTER COLUMN id SET DEFAULT nextval('public.tbl_cart_id_seq'::regclass);
+
+
+--
+-- Name: tbl_category id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_category ALTER COLUMN id SET DEFAULT nextval('public.tbl_category_id_seq'::regclass);
+
+
+--
+-- Name: tbl_cost cost_id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_cost ALTER COLUMN cost_id SET DEFAULT nextval('public.tbl_cost_cost_id_seq'::regclass);
+
+
+--
+-- Name: tbl_employee id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_employee ALTER COLUMN id SET DEFAULT nextval('public.tbl_employee_id_seq'::regclass);
+
+
+--
+-- Name: tbl_inventory id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_inventory ALTER COLUMN id SET DEFAULT nextval('public.tbl_inventory_id_seq'::regclass);
+
+
+--
+-- Name: tbl_product grp_id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_product ALTER COLUMN grp_id SET DEFAULT nextval('public.tbl_product_grp_id_seq'::regclass);
+
+
+--
+-- Name: tbl_qtime id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_qtime ALTER COLUMN id SET DEFAULT nextval('public.tbl_qtime_id_seq'::regclass);
+
+
+--
+-- Name: tbl_revenue id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_revenue ALTER COLUMN id SET DEFAULT nextval('public.tbl_revenue_id_seq'::regclass);
+
+
+--
+-- Name: tbl_schedule id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_schedule ALTER COLUMN id SET DEFAULT nextval('public.tbl_schedule_id_seq'::regclass);
+
+
+--
+-- Name: tbl_shopper id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_shopper ALTER COLUMN id SET DEFAULT nextval('public.tbl_shopper_id_seq'::regclass);
+
+
+--
+-- Name: tbl_sold id; Type: DEFAULT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_sold ALTER COLUMN id SET DEFAULT nextval('public.tbl_sold_id_seq'::regclass);
+
+
+--
+-- Data for Name: tbl_cart; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
+--
+
+COPY public.tbl_cart (id, shopper_id, inventory_id, grp_id) FROM stdin;
+\.
+
+
+--
+-- Data for Name: tbl_category; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
+--
+
+COPY public.tbl_category (id, sell_by, count) FROM stdin;
+\.
+
+
+--
+-- Data for Name: tbl_cost; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
+--
+
+COPY public.tbl_cost (cost_id, stamp, value, ctype) FROM stdin;
+\.
+
+
+--
+-- Data for Name: tbl_employee; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
+--
+
+COPY public.tbl_employee (id, shift, action, tasks, lane, checkout_speed, stock_speed, unload_speed, hourly_wage, time_worked) FROM stdin;
+\.
+
+
+--
+-- Data for Name: tbl_inventory; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
+--
+
+COPY public.tbl_inventory (id, grp_id, cart_stock, shelved_stock, back_stock, pending_stock, available, sell_by) FROM stdin;
+\.
+
+
+--
+-- Data for Name: tbl_product; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
+--
+
+COPY public.tbl_product (grp_id, category, max_shelved_stock, max_back_stock, restock_threshold, regular_price, sale_price, price_status, lot_price, lot_quantity, sublots, sublot_quantity, sell_by_days, order_threshold, order_amount) FROM stdin;
+\.
+
+
+--
+-- Data for Name: tbl_qtime; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
+--
+
+COPY public.tbl_qtime (id, lane, stamp, "time") FROM stdin;
+\.
+
+
+--
+-- Data for Name: tbl_revenue; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
+--
+
+COPY public.tbl_revenue (id, stamp, value) FROM stdin;
+\.
+
+
+--
+-- Data for Name: tbl_schedule; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
+--
+
+COPY public.tbl_schedule (id, employee_id, day, shift) FROM stdin;
+\.
+
+
+--
+-- Data for Name: tbl_shopper; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
+--
+
+COPY public.tbl_shopper (id, start_min, browse_mins, quota, cart_count, lane, qtime, status, total) FROM stdin;
+\.
+
+
+--
+-- Data for Name: tbl_sold; Type: TABLE DATA; Schema: public; Owner: fatimakahbi
+--
+
+COPY public.tbl_sold (id, grp_id, date, sold) FROM stdin;
+\.
+
+
+--
+-- Name: tbl_cart_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.tbl_cart_id_seq', 1, false);
+
+
+--
+-- Name: tbl_category_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.tbl_category_id_seq', 1, false);
+
+
+--
+-- Name: tbl_cost_cost_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.tbl_cost_cost_id_seq', 1, false);
+
+
+--
+-- Name: tbl_employee_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.tbl_employee_id_seq', 1, false);
+
+
+--
+-- Name: tbl_inventory_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.tbl_inventory_id_seq', 1, false);
+
+
+--
+-- Name: tbl_product_grp_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.tbl_product_grp_id_seq', 1, false);
+
+
+--
+-- Name: tbl_qtime_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.tbl_qtime_id_seq', 1, false);
+
+
+--
+-- Name: tbl_revenue_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.tbl_revenue_id_seq', 1, false);
+
+
+--
+-- Name: tbl_schedule_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.tbl_schedule_id_seq', 1, false);
+
+
+--
+-- Name: tbl_shopper_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.tbl_shopper_id_seq', 1, false);
+
+
+--
+-- Name: tbl_sold_id_seq; Type: SEQUENCE SET; Schema: public; Owner: fatimakahbi
+--
+
+SELECT pg_catalog.setval('public.tbl_sold_id_seq', 1, false);
+
+
+--
+-- Name: tbl_cart tbl_cart_pkey; Type: CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_cart
+    ADD CONSTRAINT tbl_cart_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tbl_category tbl_category_pkey; Type: CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_category
+    ADD CONSTRAINT tbl_category_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tbl_cost tbl_cost_pkey; Type: CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_cost
+    ADD CONSTRAINT tbl_cost_pkey PRIMARY KEY (cost_id);
+
+
+--
+-- Name: tbl_employee tbl_employee_pkey; Type: CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_employee
+    ADD CONSTRAINT tbl_employee_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tbl_inventory tbl_inventory_pkey; Type: CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_inventory
+    ADD CONSTRAINT tbl_inventory_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tbl_product tbl_product_pkey; Type: CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_product
+    ADD CONSTRAINT tbl_product_pkey PRIMARY KEY (grp_id);
+
+
+--
+-- Name: tbl_qtime tbl_qtime_pkey; Type: CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_qtime
+    ADD CONSTRAINT tbl_qtime_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tbl_revenue tbl_revenue_pkey; Type: CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_revenue
+    ADD CONSTRAINT tbl_revenue_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tbl_schedule tbl_schedule_pkey; Type: CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_schedule
+    ADD CONSTRAINT tbl_schedule_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tbl_shopper tbl_shopper_pkey; Type: CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_shopper
+    ADD CONSTRAINT tbl_shopper_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tbl_sold tbl_sold_pkey; Type: CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_sold
+    ADD CONSTRAINT tbl_sold_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tbl_cart fk1_cart; Type: FK CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_cart
+    ADD CONSTRAINT fk1_cart FOREIGN KEY (shopper_id) REFERENCES public.tbl_shopper(id);
+
+
+--
+-- Name: tbl_inventory fk1_inv; Type: FK CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_inventory
+    ADD CONSTRAINT fk1_inv FOREIGN KEY (grp_id) REFERENCES public.tbl_product(grp_id);
+
+
+--
+-- Name: tbl_product fk1_prod; Type: FK CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_product
+    ADD CONSTRAINT fk1_prod FOREIGN KEY (category) REFERENCES public.tbl_category(id);
+
+
+--
+-- Name: tbl_sold fk1_sold; Type: FK CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_sold
+    ADD CONSTRAINT fk1_sold FOREIGN KEY (grp_id) REFERENCES public.tbl_product(grp_id);
+
+
+--
+-- Name: tbl_cart fk2_cart; Type: FK CONSTRAINT; Schema: public; Owner: fatimakahbi
+--
+
+ALTER TABLE ONLY public.tbl_cart
+    ADD CONSTRAINT fk2_cart FOREIGN KEY (inventory_id) REFERENCES public.tbl_inventory(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 

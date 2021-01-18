@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, Enum
 from sqlalchemy.sql import func, null
 from sqlalchemy.sql.sqltypes import Date
-from random import randint
+import random
 from datetime import datetime, timedelta, date
 from math import ceil
 from enum import IntEnum
@@ -14,24 +14,27 @@ from models import Const, Base, provide_session  # REVIEW: clock access
 CLOCK = Const.CLOCK
 
 
+def make_sell_by():
+    return round(random.triangular(14, 365, 30))
+
+
 class ModelCategory(Base):
     __tablename__ = "tbl_category"
 
     id = Column(Integer, primary_key=True)
-    category = Column(String(50))
-    count = Column(Integer)  # number of products in this category
+    sell_by = Column(Integer, default=make_sell_by)
+    count = Column(Integer, default=0)  # number of products in this category
+
+    # FIX: come back to this
+    # START >>> category is source of sell_by dates,
+    # initialize all categories before initializing products
+    def print(self):
+        print("<cat_{}: sell_by: {}, count: {}"
+              .format(self.id, self.sell_by, self.count))
 
     def __repr__(self):
-        if self.id == 1:
-            return "frozen"
-        elif self.id == 2:
-            return "fridge"
-        elif self.id == 3:
-            return "pantry"
-        elif self.id == 4:
-            return "pet"
-        else:
-            return "meat"
+        return "<cat_{}: sell_by: {}, count: {}"\
+            .format(self.id, self.sell_by, self.count)
 
     def product_count(self):
         return self.count
@@ -57,8 +60,7 @@ class ModelProduct(Base):
 
     # basic info
     grp_id = Column(Integer, primary_key=True)
-    brand = Column(String(200))
-    name = Column(String(600))
+    # name = Column(String(600))
     category = Column(Integer)
     max_shelved_stock = Column(Integer)
     max_back_stock = Column(Integer)
@@ -68,8 +70,6 @@ class ModelProduct(Base):
     regular_price = Column(Float(precision=2))
     sale_price = Column(Float(precision=2))
     price_status = Column(Enum(PRICE))
-    popularity = Column(Float(precision=2))
-    popularity_delta = Column(Float(precision=2))
 
     # order info
     lot_price = Column(Float(precision=2))
@@ -79,6 +79,11 @@ class ModelProduct(Base):
     sell_by_days = Column(Integer)
     order_threshold = Column(Integer)
     order_amount = Column(Integer)
+
+    def print(self):
+        print("<grp_{}: cat={}, max_shelf={}, max_back={}, restock_t={}, price={}, sale={}, p_stat={}, lot_p={}, lot_q={}, sublots={}, sublot_q={}, order_t={}, order_q={}, sell={}"
+        .format(self.grp_id, self.category, self.max_shelved_stock, self.max_back_stock, self.restock_threshold, self.regular_price, self.sale_price,
+                self.price_status, self.lot_price, self.lot_quantity, self.sublots, self.sublot_quantity, self.order_threshold, self.order_amount, self.sell_by_days))
 
     # -------------------------------------------- getters and setters
     def get_lot_quantity(self):
@@ -95,12 +100,6 @@ class ModelProduct(Base):
             return self.regular_price
         else:
             return self.sale_price
-
-    def get_popularity(self):
-        if self.price_status == PRICE.regular:
-            return self.popularity
-        else:
-            return self.popularity - self.popularity_delta
 
     def get_max_back_stock(self):
         return self.max_back_stock
@@ -138,25 +137,40 @@ class ModelProduct(Base):
                                     self.max_back_stock)
 
     def get_sell_by(self):
-        noise = timedelta(days=randint(-2, 2))
+        noise = timedelta(days=random.randint(-2, 2))
         today = date(CLOCK.year, CLOCK.month, CLOCK.day)
         return today + noise + timedelta(days=self.sell_by_days)
 
     # -------------------------------------------- Other functions
-    def setup(self):
-        self.sale_price = round(
-            self.regular_price - (0.15 * self.regular_price), 2
-            )
-        self.price_status = PRICE.regular
-        self.popularity_delta = round(0.12 * self.popularity, 2)
-        self.lot_price = (self.regular_price +
-                          round(random.uniform(0.02, 0.07), 2))
+    def setup(self, cat):
+        self.category = cat
+        self.lot_quantity = random.randint(4, 100) * 100
+
+        if self.lot_quantity > 500:
+            self.sublot_quantity = 100
+        else:
+            self.sublot_quantity = random.choice([10, 20, 50])
+
+        self.sublots = self.lot_quantity / self.sublot_quantity
+
         self.max_shelved_stock = self.lot_quantity * 2
         self.max_back_stock = self.lot_quantity * 8
         self.order_threshold = round(self.max_back_stock/2)
-        self.order_amount = None
         self.restock_threshold = round((self.max_shelved_stock / 3) * 2)
-        return self.row_order_info()
+        self.order_amount = None
+
+        self.price_status = PRICE.regular
+        self.regular_price = round(random.uniform(1, 22), 2)
+        self.sale_price = round(
+            (self.regular_price - (0.08 * self.regular_price)), 2)
+        self.lot_price = round(
+            (self.regular_price
+             + random.choice([0.01, 0.02, 0.03, 0.04, 0.05]))
+            * self.lot_quantity, 2)
+
+        self.sell_by_days = round(random.uniform(14, 90))
+
+        # return self.row_order_info()
 
     def row_order_info(self):
         return [self.grp_id,
@@ -168,11 +182,8 @@ class ModelProduct(Base):
                 ]
 
     def row_basic_info(self, session=None):
-        category = session.query(ModelCategory)\
-            .filter(ModelCategory.id == self.category).first()
-        cat = category.__repr__()
         return [self.grp_id,
-                cat,
+                self.category,
                 self.price_status,
                 self.regular_price,
                 self.sale_price,

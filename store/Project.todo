@@ -63,9 +63,9 @@
 - Lane
     - inside
         - enq(sid) @done
-            - enq() test
+            - enq() test @done
         - deq() --> sid @done
-            - deq() test
+            - deq() test @done
         - set_emp(eid) @done
             - set_emp test @done
         - close() @done
@@ -73,24 +73,24 @@
         - open() @done 
             - open() test @done
         - step() @done
-            - step() test
+            - step() test @done
     - floating
         - manage() @done
             - manage() test
         - shortest() @done
-            - shortest() tested via enq
+            - shortest() tested via enq @done
         - collapse() @done
             - collapse() test
         - expand() @done
             - expand() test
         - total_shoppers() @done
-            - total_shoppers()test
+            - total_shoppers() test @done
         - avg_qlen() @done
-            - avg_qlen() test
+            - avg_qlen() test @done
         - avg_last_qtime() aka avg_alt @done
-            - avg_last_qtime() test
+            - avg_last_qtime() test @done
         - queue_shopper() @done
-            - queue_shopper() test
+            - queue_shopper() test @done
         - shift_change()  @done
             - shift_change()  test
 - Simulator
