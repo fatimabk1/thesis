@@ -106,3 +106,58 @@
         - order inventory
 - Report
 
+
+
+
+# PSUEDOCODE FOR TASK WORK PROCESS
+
+# ------------------------------------------------ main
+# pull lists
+restockme = Inventory.restock_list()
+tossme = Inventory.toss_list()
+unload = Inventory.unload_list()
+
+todo = [restockme, tossme, unload]
+
+employees = session.query(ModelEmployee).all()
+if employees:
+    emp = employees[0]
+    for lst in todo:
+        for task in lst:
+            emp_q = emp.q
+            while task.quantity < emp_q:
+                emp.assign(task)
+            updated_tasks = emp.do_tasks()
+            # some work updating the tasks & list
+
+
+# ------------------------------------------------ pulling lists
+def restock_list():
+    for prod in products:
+        curr_shelf, curr_back = DB query
+        if curr_shelf < restock_threshold:  # curr_shelf requires DB query
+            q = min(curr_back, max_shelf - curr_shelf)  # curr_back requires DB query
+
+def unload_list():
+    for prod in products:
+        if available == today AND curr_pending > 0: # curr_pending requires DB query,  overall requires DB query
+            q = curr_pending / lot_quanity 
+
+def toss_list():
+    if exp == today:  # db_query
+        q = curr_pending + curr_shelf + curr_back   # one DB query for all values
+
+
+# ------------------------------------------------ doing tasks
+def do_tasks(emp):
+    for task in emp.tasks:
+        q = execute_task(task.grp, task.q)
+        task.q = q
+    return emp.tasks
+
+
+def execute_task(grp, q):
+    inv_list = session.query(ModelInventory).filter(grp == grp).all()
+    for inv in inv_list:
+        # update inv
+    # return remaining q left on task 

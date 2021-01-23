@@ -1,7 +1,7 @@
 from models.Base import check_session, check_object_status
 from sqlalchemy import Column, Integer, func
 from tabulate import tabulate
-from models import Inventory
+from models import Inventory, Const, log, delta, StockType
 from models import Base, provide_session, ModelProduct, Session
 
 
@@ -55,15 +55,15 @@ def print_cart(sid, session=None):
     print(tabulate(table, headers, tablefmt="fancy_grid"))
 
 
-def add_item(sid, grp_id, session=None):
-    inv_id = Inventory.select_inv(grp_id, session)
+def add_inv_item(sid, inv, session=None):
     row = ModelCart(
         shopper_id=sid,
-        inventory_id=inv_id,
-        grp_id=grp_id
+        inventory_id=inv.id,
+        grp_id=inv.grp_id
     )
     session.add(row)
-    session.commit()
+    inv.increment(StockType.CART, 1)
+    inv.decrement(StockType.SHELF, 1)
 
 
 def scan_n(sid, n, session=None):
@@ -97,7 +97,8 @@ def get_total(sid, session=None):
     total = 0
     if cart:
         for item in cart:
-            product = session.query(ModelProduct)\
-                .filter(ModelProduct.grp_id == item.grp_id).one()
+            product = Const.products[item.grp_id-1]
+            # product = session.query(ModelProduct)\
+            #     .filter(ModelProduct.grp_id == item.grp_id).one()
             total += product.get_price()
     return round(total, 2)

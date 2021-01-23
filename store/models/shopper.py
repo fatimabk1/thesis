@@ -14,7 +14,7 @@ from models import (Base,
                     ModelRevenue,
                     ModelQtime)
 # CATEGORY_COUNT, SHOPPER_MIN, SHOPPER_MAX
-from models import Const
+from models import Const, log, delta
 from models import Cart
 
 # random.seed(time.clock())
@@ -45,7 +45,7 @@ class ModelShopper(Base):
     start_min = Column(Integer, default=random_start_min)
     browse_mins = Column(Integer, default=None)
     quota = Column(Integer, default=random_quota)
-    cart_count = Column(Integer, default=None)
+    cart_count = Column(Integer, default=0)
     lane = Column(Integer, default=None)
     qtime = Column(Integer, default=None)
     status = Column(Integer, default=Status.INERT)
@@ -110,20 +110,10 @@ class ModelShopper(Base):
         self.status = stat
 
     def reset_browse(self):
-        if Const.EOD_FLAG is True:
+        if Const.CLOSING_SOON:
             self.browse_mins = random.randint(1, 3)
         else:
             self.browse_mins = random.randint(2, 5)
-
-    def select_grp(self, session=None):
-        cat = random.randint(1, Const.CATEGORY_COUNT)
-        category = session.query(ModelCategory)\
-            .filter(ModelCategory.id == cat).one()
-        r = random.randint(1, category.product_count()) - 1
-        prod = session.query(ModelProduct)\
-            .filter(ModelProduct.category == cat).all()
-        prod = prod[r]
-        Cart.add_item(self.id, prod.grp_id, session)
 
     def increment_qtime(self, session=None):
         self.qtime += 1
@@ -134,64 +124,100 @@ class ModelShopper(Base):
             self.qtime = 0
         self.lane = lid
 
+    @provide_session
+    def step(self, prod_lst, inv_lookup, session=None):
+        CLOCK = Const.CLOCK
+        prev, prev_id = None, None
+
+        if self.status == Status.INERT:
+            if Const.CLOSED:
+                # TODO: mark as delted
+                pass
+            elif CLOCK.minute == self.start_min:
+                print("\tSTARTING TO SHOP!")
+                self.status = Status.SHOPPING
+                self.reset_browse()
+
+        elif self.status == Status.SHOPPING:
+
+            # done shopping
+            if self.quota == 0:
+                self.status = Status.QUEUE_READY
+                self.qtime = 0
+
+            # select grp or keep browsing
+            else:
+                if self.browse_mins == 1:
+                    print("\tSELECTING NOW!")
+                    assert(len(prod_lst) > 0 and len(inv_lookup) > 0)
+  
+                    grp_id = prod_lst.pop()
+                    inv_lst = inv_lookup[grp_id - 1]
+
+                    # # confirm successful update
+                    # print("\n~~~BEFORE")
+                    # print("\inv_lst (grp = ", grp_id, "):")
+                    # for row in inv_lst:
+                    #     print("\t" + row.__repr__())
+                    # print("\inv_lookup[{}]:".format(grp_id))
+                    # for row in inv_lookup[grp_id - 1]:
+                    #     print("\t" + row.__repr__())
+
+                    while(inv_lst[0].shelved_stock == 0):
+                        inv = inv_lst.pop(0)
+                        inv_lst.append(inv)
+                    assert(inv_lst[0].shelved_stock != 0)
+                    inv = inv_lst[0]
+                    prev_shelf = inv.shelved_stock
+                    Cart.add_inv_item(self.id, inv, session)
+                    assert(inv.shelved_stock == prev_shelf - 1)
+                    prev, prev_id = inv.shelved_stock, inv.id
+
+                    # update inv_lst
+                    # inv_lst[0] = inv
+                    # inv_lookup[grp_id - 1] = inv_lst
+
+                    # # confirm successful update
+                    # print("\n~~~AFTER")
+                    # print("\inv_lst (grp = ", grp_id, "):")
+                    # for row in inv_lst:
+                    #     print("\t" + row.__repr__())
+                    # print("\inv_lookup[{}]:".format(grp_id))
+                    # for row in inv_lookup[grp_id - 1]:
+                    #     print("\t" + row.__repr__())
+                    # exit(1)
+
+                    # other shoper updates
+                    self.quota -= 1
+                    self.cart_count += 1
+                    self.total += Const.products[grp_id - 1].get_price()
+                    self.reset_browse()
+                else:
+                    self.browse_mins -= 1
+
+        elif self.status == Status.DONE:
+            today = date(CLOCK.year, CLOCK.month, CLOCK.day)
+
+            rev = ModelRevenue(
+                stamp=today,
+                value=self.total)
+            session.add(rev)
+
+            qt = ModelQtime(
+                lane=self.lane,
+                stamp=today,
+                time=self.qtime)
+            session.add(qt)
+        else:
+            pass
+        return self.status, prev, prev_id
+
 
 def create(n, session=None):
     for i in range(n):
         s = ModelShopper()
         session.add(s)
     session.commit()
-
-
-@provide_session
-def step(sid, session=None):
-    CLOCK = Const.CLOCK
-    shopper = session.query(ModelShopper)\
-        .filter(ModelShopper.id == sid).one()
-
-    if shopper.status == Status.INERT and CLOCK.minute == shopper.start_min:
-        shopper.status = Status.SHOPPING
-        shopper.reset_browse()
-
-    elif shopper.status == Status.SHOPPING:
-
-        # done shopping
-        if shopper.quota == 0:
-            shopper.total = Cart.get_total(shopper.id, session)
-            shopper.status = Status.QUEUE_READY
-            shopper.qtime = 0
-
-        # select grp or keep browsing
-        else:
-            if shopper.browse_mins == 1:
-                shopper.select_grp(session)
-                shopper.quota -= 1
-                shopper.reset_browse()
-            else:
-                shopper.browse_mins -= 1
-
-        shopper.cart_count = Cart.get_size(shopper.id, session)
-
-    elif shopper.status == Status.DONE:
-        today = date(CLOCK.year, CLOCK.month, CLOCK.day)
-
-        rev = ModelRevenue(
-            stamp=today,
-            value=shopper.total)
-        session.add(rev)
-
-        qt = ModelQtime(
-            lane=shopper.lane,
-            stamp=today,
-            time=shopper.qtime)
-        session.add(qt)
-    else:
-        pass
-
-    session.commit()
-    # s = session.query(ModelShopper)\
-    #     .filter(ModelShopper.id == sid).one()
-    # print("shopper_{}: quota={}".format(sid, s.quota))
-    return shopper.status
 
 
 def print_active_shoppers(session=None):
@@ -210,5 +236,4 @@ def print_active_shoppers(session=None):
     print("COUNT: inert = {}, shopping = {}, qready = {}, queueing = {}, checkout = {}, done = {}"\
           .format(count[0], count[1], count[2], count[3], count[4], count[5]))
     for s in shoppers:
-        print("\there come the shoppers:")
         s.print()

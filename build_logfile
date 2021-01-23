@@ -1,0 +1,5 @@
+		LOOP_order inventory all products ∆:  0:00:14.308052
+		ordering inventory ∆:  0:00:14.309825
+	unload all products ∆:  0:00:11.360182
+	restocking all products ∆:  0:00:04.328534
+initialize() ∆:  0:00:33.657593

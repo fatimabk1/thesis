@@ -1,0 +1,186 @@
+	make_week_schedule() ∆:  0:00:01.116977
+setup_lanes_and_employees() ∆:  0:00:01.659059
+	collecting tasks ∆:  0:00:01.771758
+	SIMULATION_STEP() ∆:  0:00:01.936434
+	collecting tasks ∆:  0:00:01.670652
+	SIMULATION_STEP() ∆:  0:00:01.707498
+	collecting tasks ∆:  0:00:01.821562
+	SIMULATION_STEP() ∆:  0:00:01.871520
+	collecting tasks ∆:  0:00:02.052887
+	SIMULATION_STEP() ∆:  0:00:02.323624
+	collecting tasks ∆:  0:00:01.925693
+	SIMULATION_STEP() ∆:  0:00:02.194156
+	collecting tasks ∆:  0:00:01.916069
+	SIMULATION_STEP() ∆:  0:00:02.194843
+	collecting tasks ∆:  0:00:01.902727
+	SIMULATION_STEP() ∆:  0:00:02.192860
+	collecting tasks ∆:  0:00:01.901726
+	SIMULATION_STEP() ∆:  0:00:02.175483
+	collecting tasks ∆:  0:00:01.841122
+	SIMULATION_STEP() ∆:  0:00:02.107051
+	collecting tasks ∆:  0:00:02.218125
+	SIMULATION_STEP() ∆:  0:00:02.512645
+	collecting tasks ∆:  0:00:01.936289
+	SIMULATION_STEP() ∆:  0:00:02.396300
+	collecting tasks ∆:  0:00:01.966651
+	SIMULATION_STEP() ∆:  0:00:02.261472
+	collecting tasks ∆:  0:00:01.981112
+	SIMULATION_STEP() ∆:  0:00:02.258197
+		Inventory.restock_list() ∆:  0:00:01.016744
+	collecting tasks ∆:  0:00:02.149984
+	SIMULATION_STEP() ∆:  0:00:02.408811
+	collecting tasks ∆:  0:00:01.956112
+	SIMULATION_STEP() ∆:  0:00:02.235594
+	collecting tasks ∆:  0:00:02.179744
+	SIMULATION_STEP() ∆:  0:00:02.470997
+	collecting tasks ∆:  0:00:02.185128
+	SIMULATION_STEP() ∆:  0:00:02.498005
+	collecting tasks ∆:  0:00:02.152891
+	SIMULATION_STEP() ∆:  0:00:02.465547
+	collecting tasks ∆:  0:00:02.137984
+	SIMULATION_STEP() ∆:  0:00:02.451196
+	collecting tasks ∆:  0:00:02.149596
+	SIMULATION_STEP() ∆:  0:00:02.439791
+		Inventory.restock_list() ∆:  0:00:01.026198
+	collecting tasks ∆:  0:00:02.229021
+	SIMULATION_STEP() ∆:  0:00:02.557578
+	collecting tasks ∆:  0:00:02.214469
+	SIMULATION_STEP() ∆:  0:00:02.530022
+	collecting tasks ∆:  0:00:02.348979
+	SIMULATION_STEP() ∆:  0:00:02.677539
+		Inventory.restock_list() ∆:  0:00:01.047998
+	collecting tasks ∆:  0:00:02.352767
+	SIMULATION_STEP() ∆:  0:00:02.673118
+		Inventory.restock_list() ∆:  0:00:01.107889
+	collecting tasks ∆:  0:00:02.424566
+	SIMULATION_STEP() ∆:  0:00:02.755033
+		Inventory.restock_list() ∆:  0:00:01.185718
+	collecting tasks ∆:  0:00:02.498853
+	SIMULATION_STEP() ∆:  0:00:02.855015
+		Inventory.restock_list() ∆:  0:00:01.119947
+	collecting tasks ∆:  0:00:02.464825
+	SIMULATION_STEP() ∆:  0:00:02.857332
+		Inventory.restock_list() ∆:  0:00:01.101380
+	collecting tasks ∆:  0:00:02.492382
+	SIMULATION_STEP() ∆:  0:00:02.874174
+		Inventory.toss_list() ∆:  0:00:01.004441
+		Inventory.restock_list() ∆:  0:00:01.392933
+	collecting tasks ∆:  0:00:03.078283
+	SIMULATION_STEP() ∆:  0:00:03.448255
+		Inventory.restock_list() ∆:  0:00:01.151840
+	collecting tasks ∆:  0:00:02.604978
+	SIMULATION_STEP() ∆:  0:00:03.070471
+		Inventory.restock_list() ∆:  0:00:01.243029
+	collecting tasks ∆:  0:00:02.645979
+	SIMULATION_STEP() ∆:  0:00:03.024961
+		Inventory.restock_list() ∆:  0:00:01.242097
+	collecting tasks ∆:  0:00:02.792972
+	SIMULATION_STEP() ∆:  0:00:03.239133
+		Inventory.restock_list() ∆:  0:00:01.166296
+	collecting tasks ∆:  0:00:02.699430
+	SIMULATION_STEP() ∆:  0:00:03.153583
+		Inventory.restock_list() ∆:  0:00:01.201912
+	collecting tasks ∆:  0:00:02.717644
+	SIMULATION_STEP() ∆:  0:00:03.154278
+		Inventory.restock_list() ∆:  0:00:01.292498
+	collecting tasks ∆:  0:00:02.980205
+	SIMULATION_STEP() ∆:  0:00:03.383904
+		Inventory.restock_list() ∆:  0:00:01.334414
+	collecting tasks ∆:  0:00:02.914579
+	SIMULATION_STEP() ∆:  0:00:03.301563
+		Inventory.restock_list() ∆:  0:00:01.304695
+	collecting tasks ∆:  0:00:02.955263
+	SIMULATION_STEP() ∆:  0:00:03.348840
+		Inventory.restock_list() ∆:  0:00:01.292969
+	collecting tasks ∆:  0:00:02.897375
+	SIMULATION_STEP() ∆:  0:00:03.386171
+		Inventory.restock_list() ∆:  0:00:01.323658
+	collecting tasks ∆:  0:00:03.011585
+	SIMULATION_STEP() ∆:  0:00:03.419238
+		Inventory.restock_list() ∆:  0:00:01.403206
+	collecting tasks ∆:  0:00:03.036870
+	SIMULATION_STEP() ∆:  0:00:03.509281
+		Inventory.restock_list() ∆:  0:00:01.400371
+	collecting tasks ∆:  0:00:03.100078
+	SIMULATION_STEP() ∆:  0:00:03.537668
+		Inventory.restock_list() ∆:  0:00:01.401730
+	collecting tasks ∆:  0:00:03.136512
+	SIMULATION_STEP() ∆:  0:00:03.661115
+		Inventory.restock_list() ∆:  0:00:01.477990
+	collecting tasks ∆:  0:00:03.196081
+	SIMULATION_STEP() ∆:  0:00:03.687527
+		Inventory.restock_list() ∆:  0:00:01.497001
+	collecting tasks ∆:  0:00:03.323064
+	SIMULATION_STEP() ∆:  0:00:03.859486
+		Inventory.restock_list() ∆:  0:00:01.405681
+	collecting tasks ∆:  0:00:03.228589
+	SIMULATION_STEP() ∆:  0:00:03.730671
+		Inventory.toss_list() ∆:  0:00:01.001918
+		Inventory.restock_list() ∆:  0:00:01.508870
+	collecting tasks ∆:  0:00:03.502796
+	SIMULATION_STEP() ∆:  0:00:04.015863
+		Inventory.restock_list() ∆:  0:00:01.421856
+	collecting tasks ∆:  0:00:03.371793
+	SIMULATION_STEP() ∆:  0:00:03.950117
+		Inventory.restock_list() ∆:  0:00:01.518690
+	collecting tasks ∆:  0:00:03.406488
+	SIMULATION_STEP() ∆:  0:00:03.885782
+		Inventory.toss_list() ∆:  0:00:01.002291
+		Inventory.restock_list() ∆:  0:00:01.545632
+	collecting tasks ∆:  0:00:03.444645
+	SIMULATION_STEP() ∆:  0:00:04.020129
+		Inventory.toss_list() ∆:  0:00:01.048628
+		Inventory.restock_list() ∆:  0:00:01.601351
+	collecting tasks ∆:  0:00:03.590586
+	SIMULATION_STEP() ∆:  0:00:04.145118
+		Inventory.toss_list() ∆:  0:00:01.035297
+		Inventory.restock_list() ∆:  0:00:01.622756
+	collecting tasks ∆:  0:00:03.556621
+	SIMULATION_STEP() ∆:  0:00:04.128647
+		Inventory.toss_list() ∆:  0:00:01.001172
+		Inventory.restock_list() ∆:  0:00:01.592309
+	collecting tasks ∆:  0:00:03.549876
+	SIMULATION_STEP() ∆:  0:00:04.151121
+		Inventory.restock_list() ∆:  0:00:01.658826
+	collecting tasks ∆:  0:00:03.598329
+	SIMULATION_STEP() ∆:  0:00:04.114920
+Traceback (most recent call last):
+  File "store/main.py", line 296, in <module>
+    run()
+  File "store/main.py", line 288, in run
+    simulate_day(Day.SUNDAY, lanes)
+  File "/Users/fatimakahbi/Desktop/thesis/store/models/Base.py", line 92, in wrapper
+    return func(*args, **kwargs)
+  File "store/main.py", line 152, in simulate_day
+    restock_list = Inventory.restock_list(session)
+  File "/Users/fatimakahbi/Desktop/thesis/store/models/Inventory.py", line 333, in restock_list
+    shelf_space = available_shelf_space(prod.grp_id, session)
+  File "/Users/fatimakahbi/Desktop/thesis/store/models/Inventory.py", line 126, in available_shelf_space
+    .filter(ModelInventory.grp_id == grp_id).first()[0]
+  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/orm/query.py", line 3215, in first
+    ret = list(self[0:1])
+  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/orm/query.py", line 3007, in __getitem__
+    return list(res)
+  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/orm/query.py", line 3317, in __iter__
+    return self._execute_and_instances(context)
+  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/orm/query.py", line 3342, in _execute_and_instances
+    result = conn.execute(querycontext.statement, self._params)
+  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/engine/base.py", line 988, in execute
+    return meth(self, multiparams, params)
+  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/sql/elements.py", line 287, in _execute_on_connection
+    return connection._execute_clauseelement(self, multiparams, params)
+  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/engine/base.py", line 1107, in _execute_clauseelement
+    distilled_params,
+  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/engine/base.py", line 1248, in _execute_context
+    e, statement, parameters, cursor, context
+  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/engine/base.py", line 1468, in _handle_dbapi_exception
+    util.reraise(*exc_info)
+  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/util/compat.py", line 129, in reraise
+    raise value
+  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/engine/base.py", line 1244, in _execute_context
+    cursor, statement, parameters, context
+  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/engine/default.py", line 552, in do_execute
+    cursor.execute(statement, parameters)
+  File "/Users/fatimakahbi/.virtualenvs/thesis-env/bin/../lib/python3.7/encodings/utf_8.py", line 15, in decode
+    def decode(input, errors='strict'):
+KeyboardInterrupt

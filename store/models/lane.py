@@ -58,6 +58,9 @@ class SingleLane:
 
     def step(self, session=None):
         quota = self.items_per_min
+        if self.length == 0 and self.employee is not None:
+            self.close()
+
         while self.length > 0:
             sid = self.deq()
             cart_size = Cart.get_size(sid, session)
@@ -320,6 +323,7 @@ def expand(lanes, open_lanes, qlen, qtime):
 
 
 def print_active_lanes(lanes):
+    print("\t--- ACTIVE SHOPPERS --- ")
     for i, ln in enumerate(lanes):
         if ln.length > 0:
             ln.print(i)

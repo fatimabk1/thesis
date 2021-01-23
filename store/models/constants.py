@@ -1,5 +1,6 @@
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from enum import IntEnum
+import sys
 
 CLOCK = datetime(2019, 9, 15, 10, 0)  # SUNDAY
 TRUCK_DAYS = 2
@@ -9,6 +10,33 @@ CATEGORY_COUNT = 10  # total # of categories in db 100
 # PRODUCTS_PER_CATEGORY = int(PRODUCT_COUNT / CATEGORY_COUNT) 3000
 PRODUCTS_PER_CATEGORY = 10
 
+# ------------- performance monitoring
+LOGGING = True
+curr = None
+
+
+def log(message=None):
+    if LOGGING:
+        curr = datetime.now()
+        if message:
+            message += ": "
+            print(message, curr)
+        return curr
+
+
+def delta(message, prev):
+    if LOGGING:
+        curr = datetime.now()
+        diff = curr - prev
+        message += " ∆: "
+        print(message, curr - prev)
+        if diff.seconds > 0:
+            print(message, curr - prev, file=sys.stderr)
+
+
+# ----------------------------------- PULLING DATA
+categories = []  # ordered by category.id; access via categories[id-1]
+products = []  # ordered by product.grp_id ;access products[id-1]
 
 # ------------------------------------------------------------------------------------------------ CONSTANTS & ENUMS
 class Day(IntEnum):
@@ -71,7 +99,12 @@ class Shift(IntEnum):
     OFF = 2
 
 
+# store time flags
 CURRENT_SHIFT = None
+BEFORE = False
+OPEN = True
+CLOSED = False
+CLOSING_SOON = False
 
 
 def shift_change():
@@ -81,26 +114,26 @@ def shift_change():
     return False
 
 
-# pre-open, employees work from 8am - 10am
-def store_before():
-    if time(CLOCK.hour, CLOCK.minute) < time(10, 0):
-        return True
-    else:
-        return False
+# # pre-open, employees work from 8am - 10am
+# def store_before():
+#     if time(CLOCK.hour, CLOCK.minute) < time(10, 0):
+#         return True
+#     else:
+#         return False
 
 
-# store hours: 10am - 8pm
-def store_open():
-    if (time(CLOCK.hour, CLOCK.minute) >= time(10, 0) and
-            time(CLOCK.hour, CLOCK.minute) < time(20, 0)):
-        return True
-    else:
-        return False
+# # store hours: 10am - 8pm
+# def store_open():
+#     if (time(CLOCK.hour, CLOCK.minute) >= time(10, 0) and
+#             time(CLOCK.hour, CLOCK.minute) < time(20, 0)):
+#         return True
+#     else:
+#         return False
 
 
-# post-close, employees work from 8pm - 10pm
-def store_closed():
-    if time(CLOCK.hour, CLOCK.minute) >= time(20, 0):
-        return True
-    else:
-        return False
+# # post-close, employees work from 8pm - 10pm
+# def store_closed():
+#     if time(CLOCK.hour, CLOCK.minute) >= time(20, 0):
+#         return True
+#     else:
+#         return False
