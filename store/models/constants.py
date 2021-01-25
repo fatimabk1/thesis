@@ -30,13 +30,20 @@ def delta(message, prev):
         diff = curr - prev
         message += " ∆: "
         print(message, curr - prev)
-        if diff.seconds > 0:
+        if diff > timedelta(milliseconds=100):
             print(message, curr - prev, file=sys.stderr)
 
 
 # ----------------------------------- PULLING DATA
 categories = []  # ordered by category.id; access via categories[id-1]
 products = []  # ordered by product.grp_id ;access products[id-1]
+
+
+TASK_UNLOAD = 0
+TASK_RESTOCK = 1
+TASK_TOSS = 2
+TASK_CASHIER = 3
+
 
 # ------------------------------------------------------------------------------------------------ CONSTANTS & ENUMS
 class Day(IntEnum):

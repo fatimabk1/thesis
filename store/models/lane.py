@@ -59,7 +59,8 @@ class SingleLane:
     def step(self, session=None):
         quota = self.items_per_min
         if self.length == 0 and self.employee is not None:
-            self.close()
+            if self.id != 0 and self.id != 1:
+                self.close()
 
         while self.length > 0:
             sid = self.deq()
@@ -163,15 +164,6 @@ def manage(lanes, open_lanes, session=None):
                       .format(num_shoppers, open_lanes, qtime, open_lanes))
                 open_lanes = collapse(qlen, open_lanes)
                 Const.MANAGE_DELAY = 0
-                print("\nAFTER MANAGMEENT")
-                print("open:")
-                for i in range(open_lanes):
-                    lanes[i].print(i)
-                print("closed:")
-                for i in range(Const.MAX_LANES):
-                    if i > open_lanes and lanes[i].length > 0:
-                        lanes[i].print[i]
-                exit(1)
 
             print("\nAFTER MANAGMEENT")
             print("open:")
@@ -179,8 +171,8 @@ def manage(lanes, open_lanes, session=None):
                 lanes[i].print(i)
             print("closed:")
             for i in range(Const.MAX_LANES):
-                if i > open_lanes and lanes[i].length > 0:
-                    lanes[i].print[i]
+                if i >= open_lanes and lanes[i].length > 0:
+                    lanes[i].print(i)
         else:
             pass
 
@@ -323,7 +315,7 @@ def expand(lanes, open_lanes, qlen, qtime):
 
 
 def print_active_lanes(lanes):
-    print("\t--- ACTIVE SHOPPERS --- ")
+    print("\t--- ACTIVE LANES --- ")
     for i, ln in enumerate(lanes):
         if ln.length > 0:
             ln.print(i)

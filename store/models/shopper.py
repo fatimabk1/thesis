@@ -127,14 +127,13 @@ class ModelShopper(Base):
     @provide_session
     def step(self, prod_lst, inv_lookup, session=None):
         CLOCK = Const.CLOCK
-        prev, prev_id = None, None
 
         if self.status == Status.INERT:
             if Const.CLOSED:
                 # TODO: mark as delted
                 pass
             elif CLOCK.minute == self.start_min:
-                print("\tSTARTING TO SHOP!")
+                # print("\tSTARTING TO SHOP!")
                 self.status = Status.SHOPPING
                 self.reset_browse()
 
@@ -148,20 +147,11 @@ class ModelShopper(Base):
             # select grp or keep browsing
             else:
                 if self.browse_mins == 1:
-                    print("\tSELECTING NOW!")
+                    # print("\tSELECTING NOW!")
                     assert(len(prod_lst) > 0 and len(inv_lookup) > 0)
-  
-                    grp_id = prod_lst.pop()
-                    inv_lst = inv_lookup[grp_id - 1]
 
-                    # # confirm successful update
-                    # print("\n~~~BEFORE")
-                    # print("\inv_lst (grp = ", grp_id, "):")
-                    # for row in inv_lst:
-                    #     print("\t" + row.__repr__())
-                    # print("\inv_lookup[{}]:".format(grp_id))
-                    # for row in inv_lookup[grp_id - 1]:
-                    #     print("\t" + row.__repr__())
+                    grp_id = prod_lst.pop()
+                    inv_lst = inv_lookup[grp_id]
 
                     while(inv_lst[0].shelved_stock == 0):
                         inv = inv_lst.pop(0)
@@ -171,21 +161,6 @@ class ModelShopper(Base):
                     prev_shelf = inv.shelved_stock
                     Cart.add_inv_item(self.id, inv, session)
                     assert(inv.shelved_stock == prev_shelf - 1)
-                    prev, prev_id = inv.shelved_stock, inv.id
-
-                    # update inv_lst
-                    # inv_lst[0] = inv
-                    # inv_lookup[grp_id - 1] = inv_lst
-
-                    # # confirm successful update
-                    # print("\n~~~AFTER")
-                    # print("\inv_lst (grp = ", grp_id, "):")
-                    # for row in inv_lst:
-                    #     print("\t" + row.__repr__())
-                    # print("\inv_lookup[{}]:".format(grp_id))
-                    # for row in inv_lookup[grp_id - 1]:
-                    #     print("\t" + row.__repr__())
-                    # exit(1)
 
                     # other shoper updates
                     self.quota -= 1
@@ -210,14 +185,13 @@ class ModelShopper(Base):
             session.add(qt)
         else:
             pass
-        return self.status, prev, prev_id
+        return self.status
 
 
 def create(n, session=None):
     for i in range(n):
         s = ModelShopper()
         session.add(s)
-    session.commit()
 
 
 def print_active_shoppers(session=None):

@@ -52,50 +52,27 @@ def initialize(session=None):
     Inventory.order_inventory(session)
     Const.TRUCK_DAYS = 2
     delta("\t\tordering inventory", t)
+
+    # UNLOADS
     print("collecting unload list...")
     t = log("\t\tpulling unload list")
-    lst = Inventory.unload_list(session)
+    lookup = Inventory.unload_list(session)
     delta("\t\tpulling unload list", t)
-    GRP = 0
-    QUANTITY = 1
-    # ACTION = 2
-
-    # confirm unload lst
     print("beginning to unload...")
     start = log("\tunload all products")
-    for tpl in lst:
-        print("\t", tpl)
-        t = log("\t\tunload " + str(tpl))
-        q, emp_q = Inventory.unload(tpl[GRP], tpl[QUANTITY], 1000000, session)
-        delta("\t\tunload" + str(tpl), t)
-        # print("q = {}, emp_q = {}".format(q, emp_q))
-        vals = session.query(func.sum(ModelInventory.pending_stock),
-                             func.sum(ModelInventory.back_stock))\
-            .filter(ModelInventory.grp_id == tpl[GRP]).one()
-        pending, back = vals[0], vals[1]
-        # print("pending = {}, back = {}".format(pending, back))
-        prod = session.query(ModelProduct)\
-            .filter(ModelProduct.grp_id == tpl[GRP]).one()
-        assert(pending == 0)
-        assert(back >= tpl[QUANTITY] * prod.get_lot_quantity())
+    Inventory.manage_inventory(Const.TASK_UNLOAD, lookup, 1000000)
+    t = log()
+    session.commit()
+    delta("\commit unloads", t)
     delta("\tunload all products", start)
 
-    # initial restock
+    # RESTOCKS
     print("beginning to RESTOCK tuples...")
     t = log("\t\trestock_list()")
-    lst = Inventory.restock_list(session)
+    lookup = Inventory.restock_list(session)
     delta("\t\trestock_list()", t)
     start = log("\trestocking all products")
-    for tpl in lst:
-        print("\t", tpl)
-        t = log("\t\trestock" + str(tpl))
-        Inventory.restock(tpl[GRP], tpl[QUANTITY], 100000, session)
-        delta("\t\trestock" + str(tpl), t)
-        shelf = session.query(func.sum(ModelInventory.shelved_stock))\
-            .filter(ModelInventory.grp_id == tpl[GRP]).one()[0]
-        prod = session.query(ModelProduct)\
-            .filter(ModelProduct.grp_id == tpl[GRP]).one()
-        assert(shelf == prod.get_max_shelved_stock())
+    Inventory.manage_inventory(Const.TASK_RESTOCK, lookup, 10000000)
     delta("\trestocking all products", start)
     t = log("\tcommiting all restocks")
     session.commit()
@@ -103,17 +80,11 @@ def initialize(session=None):
     print("starter inventory completed.")
 
     print("starter inventory:")
-    inv_lst = session.query(ModelInventory)\
-        .order_by(ModelInventory.grp_id)\
-        .order_by(ModelInventory.sell_by)\
-        .order_by(ModelInventory.id).all()
-    prev = inv_lst[0].grp_id
-    for inv in inv_lst:
-        curr = inv.grp_id
-        if prev != curr:
-            print("\n")
-        inv.print()
-        prev = inv.grp_id
+    for prod in Const.products:
+        vals = session.query(
+            func.sum(ModelInventory.shelved_stock))\
+            .filter(ModelInventory.grp_id == prod.grp_id).one()
+        assert(vals is not None and vals[0] > 0)
 
 
 @provide_session

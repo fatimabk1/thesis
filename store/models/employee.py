@@ -128,47 +128,47 @@ class ModelEmployee(Base):
                       self.hourly_wage, self.time_worked) +
               "\n\ttasks={}".format(self.tasks))
 
-    def do_tasks(self, session=None):
-        assert(self.tasks is not None)
+    # def do_tasks(self, session=None):
+    #     assert(self.tasks is not None)
 
-        GRP = 0
-        QUANTITY = 1
-        ACTION = 2
-        emp_q = None
+    #     GRP = 0
+    #     QUANTITY = 1
+    #     ACTION = 2
+    #     emp_q = None
 
-        for i, tpl in enumerate(self.tasks):
-            if tpl[ACTION] == Action.UNLOAD:
-                emp_q = self.unload_speed
-            else:
-                emp_q = self.stock_speed
+    #     for i, tpl in enumerate(self.tasks):
+    #         if tpl[ACTION] == Action.UNLOAD:
+    #             emp_q = self.unload_speed
+    #         else:
+    #             emp_q = self.stock_speed
 
-            # execute task
-            q = 0
-            if tpl[ACTION] == "RESTOCK":
-                q, emp_q = Inventory.restock(tpl[GRP], tpl[QUANTITY], emp_q, session)
-                print("\tRESTOCK: q = {}, emp_q = {}".format(q, emp_q))
-            elif tpl[ACTION] == "TOSS":
-                q, emp_q = Inventory.toss(tpl[GRP], tpl[QUANTITY], emp_q, session)
-                print("\tTOSS: q = {}, emp_q = {}".format(q, emp_q))
-            elif tpl[ACTION] == "UNLOAD":
-                emp_q = self.unload_speed
-                q, emp_q = Inventory.unload(tpl[GRP], tpl[QUANTITY], emp_q, session)
-                print("\tUNLOAD: q = {}, emp_q = {}".format(q, emp_q))
-            else:
-                print("tpl[ACTION] = ", tpl[ACTION])
-                exit(2)
+    #         # execute task
+    #         q = 0
+    #         if tpl[ACTION] == "RESTOCK":
+    #             q, emp_q = Inventory.restock(tpl[GRP], tpl[QUANTITY], emp_q, session)
+    #             print("\tRESTOCK: q = {}, emp_q = {}".format(q, emp_q))
+    #         elif tpl[ACTION] == "TOSS":
+    #             q, emp_q = Inventory.toss(tpl[GRP], tpl[QUANTITY], emp_q, session)
+    #             print("\tTOSS: q = {}, emp_q = {}".format(q, emp_q))
+    #         elif tpl[ACTION] == "UNLOAD":
+    #             emp_q = self.unload_speed
+    #             q, emp_q = Inventory.unload(tpl[GRP], tpl[QUANTITY], emp_q, session)
+    #             print("\tUNLOAD: q = {}, emp_q = {}".format(q, emp_q))
+    #         else:
+    #             print("tpl[ACTION] = ", tpl[ACTION])
+    #             exit(2)
 
-            # update task status
-            t = (tpl[GRP], q, tpl[ACTION])
-            self.tasks[i] = t
-            # prev = curr
+    #         # update task status
+    #         t = (tpl[GRP], q, tpl[ACTION])
+    #         self.tasks[i] = t
+    #         # prev = curr
 
-            if emp_q == 0:
-                break
-        session.commit()
-        ret = self.tasks
-        self.tasks = None
-        return ret
+    #         if emp_q == 0:
+    #             break
+    #     session.commit()
+    #     ret = self.tasks
+    #     self.tasks = None
+    #     return ret
 
     def set_tasks(self, tasks):
         self.tasks = tasks
@@ -177,8 +177,16 @@ class ModelEmployee(Base):
     def get_tasks(self):
         return self.tasks
 
-    def get_checkout_speed(self):
-        return self.checkout_speed
+    def get_speed(self, task):
+        if task == Const.TASK_CASHIER:
+            return self.checkout_speed
+        elif task == Const.TASK_RESTOCK or task == Const.TASK_TOSS:
+            return self.stock_speed
+        elif task == Const.TASK_UNLOAD:
+            return self.unload_speed
+        else:
+            print("ERROR: Employee.get_speed() given an invalid task")
+            exit(1)
 
     def get_schedule(self, day, session):
         schedule = session.query(ModelSchedule)\

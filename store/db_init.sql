@@ -32,16 +32,6 @@ ALTER TABLE tbl_cart ADD CONSTRAINT fk1_cart FOREIGN KEY (shopper_id) REFERENCES
 -- WHERE a.curr_shelf < b.restock_threshold
 -- GROUP BY grp_id
 -- ORDER BY quantity;
-
-
-# inventory list for selecting a grp & inv
-inv_lst = session.query(ModelInventory)\
-    .filter(ModelInventory.shelved_stock > 0)\
-    .filter(ModelInventory.sell_by >= today)\
-    .group_by(ModelInventory.grp_id)\
-    .order_by(ModelInventory.sell_by)\
-    .order_by(ModelInventory.shelved_stock)\
-    .order_by(ModelInventory.back_stock).all()
     
 
 -- -- dates matter (AVAILABLE == TODAY?)

@@ -31,9 +31,6 @@ def simulate_day(day, lanes, session=None):
             ln.open()
 
     for t_step in range(steps):
-        if t_step == 70:
-            return
-
         step_start = log()
         print("------------------------------------------------------------------------------------------------------------------------------------------ {:02}:{:02}"\
               .format(Const.CLOCK.hour, Const.CLOCK.minute))
@@ -42,6 +39,7 @@ def simulate_day(day, lanes, session=None):
             t = log()
             # TODO: num_shoppers = random func in const
             Shopper.create(300, session)
+            session.commit()
             delta("\tcreate 300 shoppers", t)
 
         # -------------------------------------------------- advance shoppers
@@ -54,64 +52,44 @@ def simulate_day(day, lanes, session=None):
             if s.browse_mins == 1:
                 n += 1
         print("{} SHOPPERS SELECTING...".format(n))
-        prod_lst, inv_lookup = [], []
+        prod_lst, inv_lookup = [], {}
         if n != 0:
             print("selecting grp now...")
             prod_lst = Product.select_grp(n)
+            # for p in prod_lst:
+            #     print("\t prod = ", p)
             print("{} products selected".format(len(prod_lst)))
             print("pulling inv now...")
             t = log()
             inv_lookup = Inventory.pull_inventory(n, session)
             delta("\tInventory.pull_inventory", t)
-            # print("hello there!")
             assert(len(inv_lookup) == Const.PRODUCT_COUNT)
-
-        # confirm that inventory changes are committed
-        inv_before = session.query(ModelInventory.grp_id,
-                                   func.sum(ModelInventory.shelved_stock))\
-            .group_by(ModelInventory.grp_id)\
-            .order_by(ModelInventory.grp_id).all()
-        inv_before = [item for item in inv_before]
 
         if shopper_group:
             print("advancing shoppers...")
             shopper_advance = log()
             for sh in shopper_group:
-                t = log()
+                # t = log()
                 stat = sh.step(prod_lst, inv_lookup, session)
-                delta("\t\tShopper.step(status={})".format(stat), t)
+                # delta("\t\tShopper.step(status={})".format(stat), t)
                 if (stat is Status.QUEUE_READY or stat is Status.QUEUEING
                         or stat is Status.DONE):
 
                     if stat is Status.QUEUE_READY:
-                        print("\t\tqueueing shopper...")
-                        lid = Lane.queue_shopper(sh.id, lanes, open_lanes)  # CHECK if we should pass a session
+                        # print("\t\tqueueing shopper...")
+                        lid = Lane.queue_shopper(sh.id, lanes, open_lanes)
                         sh.set_lane(lid)
                         sh.set_status(Status.QUEUEING)
                     elif stat is Status.QUEUEING:
                         sh.increment_qtime(session)
                     elif stat is Status.DONE:
+                        pass
                         # FIXME: no deletes --> IS_DELETED column
-                        session.delete(sh)
+            t = log()
             session.commit()
-
-            # confirm that inventory changes were committed
-            if n > 0:
-                inv_after = session.query(ModelInventory.grp_id,
-                                          func.sum(ModelInventory.shelved_stock))\
-                    .group_by(ModelInventory.grp_id)\
-                    .order_by(ModelInventory.grp_id).all()
-                inv_after = [item for item in inv_after]
-                count = 0
-                print("\n", inv_before)
-                print("\n", inv_after)
-                for i in range(len(inv_before)):
-                    if inv_before[i] > inv_after[i]:
-                        count += 1
-                assert(count > 0)
-                print("\n\n")
-
+            delta("\tcommiting shopper steps", t)
             delta("\tadvancing {} shoppers".format(len(shopper_group)), shopper_advance)
+
         # -------------------------------------------------- advance lanes
         # lanes are open for store hours and post-close lingering shoppers
         if Const.OPEN or shopper_group:
@@ -124,12 +102,7 @@ def simulate_day(day, lanes, session=None):
 
             # finish closing out lanes that were checking out shoppers when closed
             lane_advance = log()
-            for index, ln in enumerate(lanes):
-                # if (index >= open_lanes
-                #         and ln.length == 0
-                #         and ln.employee is not None):
-                    # ln.close()  # test if values persist -- may need to pass a session to return employee 
-                    # >>> now handled within step
+            for ln in lanes:
                 # t = log()
                 ln.step(session)
                 # delta("\t\tLane.step()", t)
@@ -137,101 +110,107 @@ def simulate_day(day, lanes, session=None):
 
         # -------------------------------------------------- advance employees
         # collect tasks
-        # START HERE >>>>>>>>>>>>>>>>>> LOGGING
         task_collection = log()
         print("\ncollecting tasks...")
+
         t = log()
-        unload_list = Inventory.unload_list(session)
+        unload_lookup = Inventory.unload_list(session)
         delta("\t\tInventory.unload_list()", t)
-        print("unload list: ", unload_list)
+
         t = log()
-        toss_list = Inventory.toss_list(session)
+        toss_lookup = Inventory.toss_list(session)
         delta("\t\tInventory.toss_list()", t)
-        print("toss list: ", toss_list)
+
         t = log()
-        restock_list = Inventory.restock_list(session)
+        restock_lookup = Inventory.restock_list(session)
         delta("\t\tInventory.restock_list()", t)
-        print("restock list: ", restock_list)
+
         delta("\tcollecting tasks", task_collection)
 
         # order tasks lists by priority
         print("ordering task lists...")
         todo = []
         if Const.BEFORE:
-            todo = [unload_list, restock_list, toss_list]
+            todo = [{"type": Const.TASK_UNLOAD,
+                     "lookup": unload_lookup},
+                    {"type": Const.TASK_RESTOCK,
+                     "lookup": restock_lookup},
+                    {"type": Const.TASK_TOSS,
+                     "lookup": toss_lookup}]
         elif Const.OPEN:
-            todo = [restock_list, toss_list, unload_list]
+            todo = [{"type": Const.TASK_RESTOCK,
+                     "lookup": restock_lookup},
+                    {"type": Const.TASK_TOSS,
+                     "lookup": toss_lookup},
+                    {"type": Const.TASK_UNLOAD,
+                     "lookup": unload_lookup}]
         else:
-            todo = [toss_list, restock_list, unload_list]
-        # todo = [item for sublist in todo for item in sublist]  # flatten into list of tuples
-
-        # tuple access
-        GRP = 0
-        QUANTITY = 1
+            todo = [{"type": Const.TASK_TOSS,
+                     "lookup": toss_lookup},
+                    {"type": Const.TASK_RESTOCK,
+                     "lookup": restock_lookup},
+                    {"type": Const.TASK_UNLOAD,
+                     "lookup": unload_lookup}]
 
         print("collecting employees...")
+        employee_advance = log()
         group = session.query(ModelEmployee)\
             .filter(ModelEmployee.action != Action.CASHIER).all()
         emp_count = len(group)
         assert(emp_count > 0)
 
-        i = 0
-        employee_advance = log()
-        emp = group[i]
-        for lst in todo:
-            if not lst:
-                print("\tno tasks in lst")
-                continue
+        todo_index = 0
+        # loop through employees
+        for emp in group:
+            while(todo_index < len(todo) and bool(todo[todo_index]["lookup"]) is False):
+                todo_index += 1
 
-            else:
-                print("---------------------- EMPLOYEE_{} ------------------------".format(emp.id))
-                # print("pre_list: ", lst)
+            if todo_index >= len(todo):
+                break
 
-                # assign tasks
-                print("assigning tasks...")
-                count = 0
-                emp_q = emp.stock_speed
-                tasks = []
-                for tpl in lst:
-                    if count < emp_q:
-                        tasks.append(tpl)
-                        count += tpl[QUANTITY]
-                emp.set_tasks(tasks)
-                print("\tassigned tasks: ", tasks)
+            task = todo[todo_index]["type"]
+            print("Task type: ", task)
+            lookup = todo[todo_index]["lookup"]
+            emp_q = emp.get_speed(task)
+            print("Advancing employee {} with speed {}".format(emp.id, emp_q))
+
+            i = 0
+            # loop through tasks in lookup
+            while(emp_q != 0):
+                i += 1
+                if i == 50:
+                    exit(1)
 
                 # do task
                 t = log()
-                updated_tasks = emp.do_tasks(session)
-                delta("\t\temp.do_tasks()", t)
-                print("\tupdated tasks: ", updated_tasks)
+                emp_q, completed = Inventory.manage_inventory(task, lookup, emp_q)
+                delta("\t\t\tInventory.manage_inventory()", t)
+                # print("completed: ", completed)
 
-                # update lst
-                for tpl in updated_tasks:
-                    index = [i for i, t in enumerate(lst)
-                             if t[GRP] == tpl[GRP]][0]
-                    if tpl[QUANTITY] == 0:
-                        del lst[index]
-                    else:
-                        vals = list(lst[index])
-                        vals[QUANTITY] -= tpl[QUANTITY]
-                        lst[index] = (vals)
-                # print("post_list: ", lst)
+                # update lookup
+                for grp_id in completed:
+                    del lookup[grp_id]
 
-                # get next employee
-                i += 1
-                if i == emp_count:
+                if bool(todo[todo_index]["lookup"]) is False:
                     break
-                else:
-                    emp = group[i]
+
+            # move on to next todo
+            if bool(todo[todo_index]["lookup"]) is False:
+                todo_index += 1
+                if todo_index > len(todo):
+                    break
         delta("\tadvance all employees", employee_advance)
+
         # -------------------------------------------------- print object statuses
         Const.CLOCK += timedelta(minutes=1)
-        delta("\tSIMULATION_STEP()", step_start)
+        delta("\tSIMULATION_STEP(steps={})".format(t_step), step_start)
         print("\n***************************** STATUS ***************************************")
         Shopper.print_active_shoppers(session)
         print("\n")
         # Employee.print_active_employees(session)
+        # print("\n")
         Lane.print_active_lanes(lanes)
+        # print("\n")
         # Inventory.print_stock_status(session)
 
     print("Day complete. Good Job!!!")

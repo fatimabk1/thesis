@@ -1,186 +1,389 @@
-	make_week_schedule() ∆:  0:00:01.116977
-setup_lanes_and_employees() ∆:  0:00:01.659059
-	collecting tasks ∆:  0:00:01.771758
-	SIMULATION_STEP() ∆:  0:00:01.936434
-	collecting tasks ∆:  0:00:01.670652
-	SIMULATION_STEP() ∆:  0:00:01.707498
-	collecting tasks ∆:  0:00:01.821562
-	SIMULATION_STEP() ∆:  0:00:01.871520
-	collecting tasks ∆:  0:00:02.052887
-	SIMULATION_STEP() ∆:  0:00:02.323624
-	collecting tasks ∆:  0:00:01.925693
-	SIMULATION_STEP() ∆:  0:00:02.194156
-	collecting tasks ∆:  0:00:01.916069
-	SIMULATION_STEP() ∆:  0:00:02.194843
-	collecting tasks ∆:  0:00:01.902727
-	SIMULATION_STEP() ∆:  0:00:02.192860
-	collecting tasks ∆:  0:00:01.901726
-	SIMULATION_STEP() ∆:  0:00:02.175483
-	collecting tasks ∆:  0:00:01.841122
-	SIMULATION_STEP() ∆:  0:00:02.107051
-	collecting tasks ∆:  0:00:02.218125
-	SIMULATION_STEP() ∆:  0:00:02.512645
-	collecting tasks ∆:  0:00:01.936289
-	SIMULATION_STEP() ∆:  0:00:02.396300
-	collecting tasks ∆:  0:00:01.966651
-	SIMULATION_STEP() ∆:  0:00:02.261472
-	collecting tasks ∆:  0:00:01.981112
-	SIMULATION_STEP() ∆:  0:00:02.258197
-		Inventory.restock_list() ∆:  0:00:01.016744
-	collecting tasks ∆:  0:00:02.149984
-	SIMULATION_STEP() ∆:  0:00:02.408811
-	collecting tasks ∆:  0:00:01.956112
-	SIMULATION_STEP() ∆:  0:00:02.235594
-	collecting tasks ∆:  0:00:02.179744
-	SIMULATION_STEP() ∆:  0:00:02.470997
-	collecting tasks ∆:  0:00:02.185128
-	SIMULATION_STEP() ∆:  0:00:02.498005
-	collecting tasks ∆:  0:00:02.152891
-	SIMULATION_STEP() ∆:  0:00:02.465547
-	collecting tasks ∆:  0:00:02.137984
-	SIMULATION_STEP() ∆:  0:00:02.451196
-	collecting tasks ∆:  0:00:02.149596
-	SIMULATION_STEP() ∆:  0:00:02.439791
-		Inventory.restock_list() ∆:  0:00:01.026198
-	collecting tasks ∆:  0:00:02.229021
-	SIMULATION_STEP() ∆:  0:00:02.557578
-	collecting tasks ∆:  0:00:02.214469
-	SIMULATION_STEP() ∆:  0:00:02.530022
-	collecting tasks ∆:  0:00:02.348979
-	SIMULATION_STEP() ∆:  0:00:02.677539
-		Inventory.restock_list() ∆:  0:00:01.047998
-	collecting tasks ∆:  0:00:02.352767
-	SIMULATION_STEP() ∆:  0:00:02.673118
-		Inventory.restock_list() ∆:  0:00:01.107889
-	collecting tasks ∆:  0:00:02.424566
-	SIMULATION_STEP() ∆:  0:00:02.755033
-		Inventory.restock_list() ∆:  0:00:01.185718
-	collecting tasks ∆:  0:00:02.498853
-	SIMULATION_STEP() ∆:  0:00:02.855015
-		Inventory.restock_list() ∆:  0:00:01.119947
-	collecting tasks ∆:  0:00:02.464825
-	SIMULATION_STEP() ∆:  0:00:02.857332
-		Inventory.restock_list() ∆:  0:00:01.101380
-	collecting tasks ∆:  0:00:02.492382
-	SIMULATION_STEP() ∆:  0:00:02.874174
-		Inventory.toss_list() ∆:  0:00:01.004441
-		Inventory.restock_list() ∆:  0:00:01.392933
-	collecting tasks ∆:  0:00:03.078283
-	SIMULATION_STEP() ∆:  0:00:03.448255
-		Inventory.restock_list() ∆:  0:00:01.151840
-	collecting tasks ∆:  0:00:02.604978
-	SIMULATION_STEP() ∆:  0:00:03.070471
-		Inventory.restock_list() ∆:  0:00:01.243029
-	collecting tasks ∆:  0:00:02.645979
-	SIMULATION_STEP() ∆:  0:00:03.024961
-		Inventory.restock_list() ∆:  0:00:01.242097
-	collecting tasks ∆:  0:00:02.792972
-	SIMULATION_STEP() ∆:  0:00:03.239133
-		Inventory.restock_list() ∆:  0:00:01.166296
-	collecting tasks ∆:  0:00:02.699430
-	SIMULATION_STEP() ∆:  0:00:03.153583
-		Inventory.restock_list() ∆:  0:00:01.201912
-	collecting tasks ∆:  0:00:02.717644
-	SIMULATION_STEP() ∆:  0:00:03.154278
-		Inventory.restock_list() ∆:  0:00:01.292498
-	collecting tasks ∆:  0:00:02.980205
-	SIMULATION_STEP() ∆:  0:00:03.383904
-		Inventory.restock_list() ∆:  0:00:01.334414
-	collecting tasks ∆:  0:00:02.914579
-	SIMULATION_STEP() ∆:  0:00:03.301563
-		Inventory.restock_list() ∆:  0:00:01.304695
-	collecting tasks ∆:  0:00:02.955263
-	SIMULATION_STEP() ∆:  0:00:03.348840
-		Inventory.restock_list() ∆:  0:00:01.292969
-	collecting tasks ∆:  0:00:02.897375
-	SIMULATION_STEP() ∆:  0:00:03.386171
-		Inventory.restock_list() ∆:  0:00:01.323658
-	collecting tasks ∆:  0:00:03.011585
-	SIMULATION_STEP() ∆:  0:00:03.419238
-		Inventory.restock_list() ∆:  0:00:01.403206
-	collecting tasks ∆:  0:00:03.036870
-	SIMULATION_STEP() ∆:  0:00:03.509281
-		Inventory.restock_list() ∆:  0:00:01.400371
-	collecting tasks ∆:  0:00:03.100078
-	SIMULATION_STEP() ∆:  0:00:03.537668
-		Inventory.restock_list() ∆:  0:00:01.401730
-	collecting tasks ∆:  0:00:03.136512
-	SIMULATION_STEP() ∆:  0:00:03.661115
-		Inventory.restock_list() ∆:  0:00:01.477990
-	collecting tasks ∆:  0:00:03.196081
-	SIMULATION_STEP() ∆:  0:00:03.687527
-		Inventory.restock_list() ∆:  0:00:01.497001
-	collecting tasks ∆:  0:00:03.323064
-	SIMULATION_STEP() ∆:  0:00:03.859486
-		Inventory.restock_list() ∆:  0:00:01.405681
-	collecting tasks ∆:  0:00:03.228589
-	SIMULATION_STEP() ∆:  0:00:03.730671
-		Inventory.toss_list() ∆:  0:00:01.001918
-		Inventory.restock_list() ∆:  0:00:01.508870
-	collecting tasks ∆:  0:00:03.502796
-	SIMULATION_STEP() ∆:  0:00:04.015863
-		Inventory.restock_list() ∆:  0:00:01.421856
-	collecting tasks ∆:  0:00:03.371793
-	SIMULATION_STEP() ∆:  0:00:03.950117
-		Inventory.restock_list() ∆:  0:00:01.518690
-	collecting tasks ∆:  0:00:03.406488
-	SIMULATION_STEP() ∆:  0:00:03.885782
-		Inventory.toss_list() ∆:  0:00:01.002291
-		Inventory.restock_list() ∆:  0:00:01.545632
-	collecting tasks ∆:  0:00:03.444645
-	SIMULATION_STEP() ∆:  0:00:04.020129
-		Inventory.toss_list() ∆:  0:00:01.048628
-		Inventory.restock_list() ∆:  0:00:01.601351
-	collecting tasks ∆:  0:00:03.590586
-	SIMULATION_STEP() ∆:  0:00:04.145118
-		Inventory.toss_list() ∆:  0:00:01.035297
-		Inventory.restock_list() ∆:  0:00:01.622756
-	collecting tasks ∆:  0:00:03.556621
-	SIMULATION_STEP() ∆:  0:00:04.128647
-		Inventory.toss_list() ∆:  0:00:01.001172
-		Inventory.restock_list() ∆:  0:00:01.592309
-	collecting tasks ∆:  0:00:03.549876
-	SIMULATION_STEP() ∆:  0:00:04.151121
-		Inventory.restock_list() ∆:  0:00:01.658826
-	collecting tasks ∆:  0:00:03.598329
-	SIMULATION_STEP() ∆:  0:00:04.114920
+	create 100 employees: ∆:  0:00:00.481291
+	make_week_schedule() ∆:  0:00:00.902281
+setup_lanes_and_employees() ∆:  0:00:01.384145
+	set_day_schedule() ∆:  0:00:00.145616
+	create 300 shoppers ∆:  0:00:00.124825
+			-qualified inventory ∆:  0:00:00.300797
+		Inventory.restock_list() ∆:  0:00:00.383837
+	collecting tasks ∆:  0:00:00.395867
+	SIMULATION_STEP(steps=0) ∆:  0:00:00.533835
+			-qualified inventory ∆:  0:00:00.302862
+		Inventory.restock_list() ∆:  0:00:00.380386
+	collecting tasks ∆:  0:00:00.390935
+	SIMULATION_STEP(steps=1) ∆:  0:00:00.403950
+			-qualified inventory ∆:  0:00:00.321817
+		Inventory.restock_list() ∆:  0:00:00.403337
+	collecting tasks ∆:  0:00:00.412609
+	SIMULATION_STEP(steps=2) ∆:  0:00:00.427453
+			qualified inventory, db query ∆:  0:00:00.143430
+	Inventory.pull_inventory ∆:  0:00:00.185293
+			-qualified inventory ∆:  0:00:00.321608
+		Inventory.restock_list() ∆:  0:00:00.413759
+	collecting tasks ∆:  0:00:00.424574
+	SIMULATION_STEP(steps=3) ∆:  0:00:00.635338
+			qualified inventory, db query ∆:  0:00:00.151038
+	Inventory.pull_inventory ∆:  0:00:00.189785
+			-qualified inventory ∆:  0:00:00.280300
+		Inventory.restock_list() ∆:  0:00:00.357832
+	collecting tasks ∆:  0:00:00.367172
+	SIMULATION_STEP(steps=4) ∆:  0:00:00.580493
+			qualified inventory, db query ∆:  0:00:00.140941
+	Inventory.pull_inventory ∆:  0:00:00.174208
+			-qualified inventory ∆:  0:00:00.304270
+		Inventory.restock_list() ∆:  0:00:00.377879
+	collecting tasks ∆:  0:00:00.387917
+	SIMULATION_STEP(steps=5) ∆:  0:00:00.594865
+			qualified inventory, db query ∆:  0:00:00.135441
+	Inventory.pull_inventory ∆:  0:00:00.168907
+			-qualified inventory ∆:  0:00:00.288724
+		Inventory.restock_list() ∆:  0:00:00.364728
+	collecting tasks ∆:  0:00:00.374104
+	SIMULATION_STEP(steps=6) ∆:  0:00:00.580163
+			qualified inventory, db query ∆:  0:00:00.152315
+	Inventory.pull_inventory ∆:  0:00:00.190980
+			-qualified inventory ∆:  0:00:00.293987
+		Inventory.restock_list() ∆:  0:00:00.374124
+	collecting tasks ∆:  0:00:00.392492
+	SIMULATION_STEP(steps=7) ∆:  0:00:00.619304
+			qualified inventory, db query ∆:  0:00:00.139360
+	Inventory.pull_inventory ∆:  0:00:00.174743
+			-qualified inventory ∆:  0:00:00.319444
+		Inventory.restock_list() ∆:  0:00:00.403509
+	collecting tasks ∆:  0:00:00.412790
+	SIMULATION_STEP(steps=8) ∆:  0:00:00.626686
+			qualified inventory, db query ∆:  0:00:00.140039
+	Inventory.pull_inventory ∆:  0:00:00.173612
+			-qualified inventory ∆:  0:00:00.287044
+		Inventory.restock_list() ∆:  0:00:00.360364
+	collecting tasks ∆:  0:00:00.370430
+	SIMULATION_STEP(steps=9) ∆:  0:00:00.588451
+			qualified inventory, db query ∆:  0:00:00.142695
+	Inventory.pull_inventory ∆:  0:00:00.174883
+			-qualified inventory ∆:  0:00:00.287583
+		Inventory.restock_list() ∆:  0:00:00.361557
+	collecting tasks ∆:  0:00:00.370953
+	SIMULATION_STEP(steps=10) ∆:  0:00:00.591767
+			qualified inventory, db query ∆:  0:00:00.161274
+	Inventory.pull_inventory ∆:  0:00:00.199519
+			-qualified inventory ∆:  0:00:00.295032
+		Inventory.restock_list() ∆:  0:00:00.370934
+	collecting tasks ∆:  0:00:00.380533
+	SIMULATION_STEP(steps=11) ∆:  0:00:00.628897
+			qualified inventory, db query ∆:  0:00:00.151780
+	Inventory.pull_inventory ∆:  0:00:00.196129
+			-qualified inventory ∆:  0:00:00.289036
+		Inventory.restock_list() ∆:  0:00:00.363703
+	collecting tasks ∆:  0:00:00.372443
+	SIMULATION_STEP(steps=12) ∆:  0:00:00.622709
+			qualified inventory, db query ∆:  0:00:00.137191
+	Inventory.pull_inventory ∆:  0:00:00.177311
+			-qualified inventory ∆:  0:00:00.318613
+		Inventory.restock_list() ∆:  0:00:00.392767
+	collecting tasks ∆:  0:00:00.404187
+	SIMULATION_STEP(steps=13) ∆:  0:00:00.652125
+			qualified inventory, db query ∆:  0:00:00.132422
+	Inventory.pull_inventory ∆:  0:00:00.164330
+			-qualified inventory ∆:  0:00:00.281921
+		Inventory.restock_list() ∆:  0:00:00.356702
+	collecting tasks ∆:  0:00:00.365643
+	SIMULATION_STEP(steps=14) ∆:  0:00:00.581093
+			qualified inventory, db query ∆:  0:00:00.155364
+	Inventory.pull_inventory ∆:  0:00:00.194650
+			-qualified inventory ∆:  0:00:00.306360
+		Inventory.restock_list() ∆:  0:00:00.382236
+	collecting tasks ∆:  0:00:00.393053
+	SIMULATION_STEP(steps=15) ∆:  0:00:00.641531
+			qualified inventory, db query ∆:  0:00:00.137330
+	Inventory.pull_inventory ∆:  0:00:00.171643
+			-qualified inventory ∆:  0:00:00.327677
+		Inventory.restock_list() ∆:  0:00:00.406074
+	collecting tasks ∆:  0:00:00.416903
+	SIMULATION_STEP(steps=16) ∆:  0:00:00.657305
+			qualified inventory, db query ∆:  0:00:00.139480
+	Inventory.pull_inventory ∆:  0:00:00.172612
+			-qualified inventory ∆:  0:00:00.289211
+		Inventory.restock_list() ∆:  0:00:00.367829
+	collecting tasks ∆:  0:00:00.376327
+	SIMULATION_STEP(steps=17) ∆:  0:00:00.609379
+			qualified inventory, db query ∆:  0:00:00.147702
+	Inventory.pull_inventory ∆:  0:00:00.179323
+			-qualified inventory ∆:  0:00:00.297172
+		Inventory.restock_list() ∆:  0:00:00.373347
+	collecting tasks ∆:  0:00:00.382992
+	SIMULATION_STEP(steps=18) ∆:  0:00:00.629135
+			qualified inventory, db query ∆:  0:00:00.154293
+	Inventory.pull_inventory ∆:  0:00:00.191291
+			-qualified inventory ∆:  0:00:00.299970
+		Inventory.restock_list() ∆:  0:00:00.376471
+	collecting tasks ∆:  0:00:00.386596
+	SIMULATION_STEP(steps=19) ∆:  0:00:00.644237
+			qualified inventory, db query ∆:  0:00:00.157027
+	Inventory.pull_inventory ∆:  0:00:00.190897
+			-qualified inventory ∆:  0:00:00.296124
+		Inventory.restock_list() ∆:  0:00:00.372235
+	collecting tasks ∆:  0:00:00.381033
+	SIMULATION_STEP(steps=20) ∆:  0:00:00.638806
+			qualified inventory, db query ∆:  0:00:00.138478
+	Inventory.pull_inventory ∆:  0:00:00.170078
+			-qualified inventory ∆:  0:00:00.308860
+		Inventory.restock_list() ∆:  0:00:00.384479
+	collecting tasks ∆:  0:00:00.393361
+	SIMULATION_STEP(steps=21) ∆:  0:00:00.646576
+			qualified inventory, db query ∆:  0:00:00.136996
+	Inventory.pull_inventory ∆:  0:00:00.167511
+			-qualified inventory ∆:  0:00:00.336894
+		Inventory.restock_list() ∆:  0:00:00.417918
+	collecting tasks ∆:  0:00:00.427176
+	SIMULATION_STEP(steps=22) ∆:  0:00:00.669638
+			qualified inventory, db query ∆:  0:00:00.154830
+	Inventory.pull_inventory ∆:  0:00:00.192285
+			-qualified inventory ∆:  0:00:00.308483
+		Inventory.restock_list() ∆:  0:00:00.386490
+	collecting tasks ∆:  0:00:00.396164
+	SIMULATION_STEP(steps=23) ∆:  0:00:00.676079
+			qualified inventory, db query ∆:  0:00:00.145623
+	Inventory.pull_inventory ∆:  0:00:00.179455
+			-qualified inventory ∆:  0:00:00.316286
+		Inventory.restock_list() ∆:  0:00:00.392004
+	collecting tasks ∆:  0:00:00.400549
+	SIMULATION_STEP(steps=24) ∆:  0:00:00.661359
+			qualified inventory, db query ∆:  0:00:00.141783
+	Inventory.pull_inventory ∆:  0:00:00.173935
+			-qualified inventory ∆:  0:00:00.310914
+		Inventory.restock_list() ∆:  0:00:00.387945
+	collecting tasks ∆:  0:00:00.397309
+	SIMULATION_STEP(steps=25) ∆:  0:00:00.658257
+			qualified inventory, db query ∆:  0:00:00.155774
+	Inventory.pull_inventory ∆:  0:00:00.188070
+			-qualified inventory ∆:  0:00:00.335543
+		Inventory.restock_list() ∆:  0:00:00.411350
+	collecting tasks ∆:  0:00:00.420506
+	SIMULATION_STEP(steps=26) ∆:  0:00:00.696083
+			qualified inventory, db query ∆:  0:00:00.146334
+	Inventory.pull_inventory ∆:  0:00:00.187520
+			-qualified inventory ∆:  0:00:00.321152
+		Inventory.restock_list() ∆:  0:00:00.406184
+	collecting tasks ∆:  0:00:00.415306
+	SIMULATION_STEP(steps=27) ∆:  0:00:00.705624
+			qualified inventory, db query ∆:  0:00:00.153925
+	Inventory.pull_inventory ∆:  0:00:00.187282
+			-qualified inventory ∆:  0:00:00.329697
+		Inventory.restock_list() ∆:  0:00:00.408008
+	collecting tasks ∆:  0:00:00.418102
+	SIMULATION_STEP(steps=28) ∆:  0:00:00.714017
+			qualified inventory, db query ∆:  0:00:00.142501
+	Inventory.pull_inventory ∆:  0:00:00.174339
+			-qualified inventory ∆:  0:00:00.304429
+		Inventory.restock_list() ∆:  0:00:00.387884
+	collecting tasks ∆:  0:00:00.398201
+	SIMULATION_STEP(steps=29) ∆:  0:00:00.670410
+			qualified inventory, db query ∆:  0:00:00.143800
+	Inventory.pull_inventory ∆:  0:00:00.172723
+			-qualified inventory ∆:  0:00:00.356170
+		Inventory.restock_list() ∆:  0:00:00.436383
+	collecting tasks ∆:  0:00:00.446049
+	SIMULATION_STEP(steps=30) ∆:  0:00:00.729743
+			qualified inventory, db query ∆:  0:00:00.160443
+	Inventory.pull_inventory ∆:  0:00:00.198891
+			-qualified inventory ∆:  0:00:00.329538
+		Inventory.restock_list() ∆:  0:00:00.407869
+	collecting tasks ∆:  0:00:00.418286
+	SIMULATION_STEP(steps=31) ∆:  0:00:00.744219
+			qualified inventory, db query ∆:  0:00:00.141100
+	Inventory.pull_inventory ∆:  0:00:00.171309
+			-qualified inventory ∆:  0:00:00.312656
+		Inventory.restock_list() ∆:  0:00:00.390225
+	collecting tasks ∆:  0:00:00.400281
+	SIMULATION_STEP(steps=32) ∆:  0:00:00.678811
+			qualified inventory, db query ∆:  0:00:00.151791
+	Inventory.pull_inventory ∆:  0:00:00.182869
+			-qualified inventory ∆:  0:00:00.312741
+		Inventory.restock_list() ∆:  0:00:00.390330
+	collecting tasks ∆:  0:00:00.399736
+	SIMULATION_STEP(steps=33) ∆:  0:00:00.697669
+			qualified inventory, db query ∆:  0:00:00.139342
+	Inventory.pull_inventory ∆:  0:00:00.168592
+			-qualified inventory ∆:  0:00:00.347703
+		Inventory.restock_list() ∆:  0:00:00.428339
+	collecting tasks ∆:  0:00:00.437366
+	SIMULATION_STEP(steps=34) ∆:  0:00:00.710942
+			qualified inventory, db query ∆:  0:00:00.139063
+	Inventory.pull_inventory ∆:  0:00:00.172753
+			-qualified inventory ∆:  0:00:00.323781
+		Inventory.restock_list() ∆:  0:00:00.409583
+	collecting tasks ∆:  0:00:00.418933
+	SIMULATION_STEP(steps=35) ∆:  0:00:00.693142
+			qualified inventory, db query ∆:  0:00:00.152236
+	Inventory.pull_inventory ∆:  0:00:00.183915
+			-qualified inventory ∆:  0:00:00.311914
+		Inventory.restock_list() ∆:  0:00:00.391186
+	collecting tasks ∆:  0:00:00.400258
+	SIMULATION_STEP(steps=36) ∆:  0:00:00.697607
+			qualified inventory, db query ∆:  0:00:00.139569
+	Inventory.pull_inventory ∆:  0:00:00.168082
+	advancing 300 shoppers ∆:  0:00:00.105984
+			-qualified inventory ∆:  0:00:00.316079
+		Inventory.restock_list() ∆:  0:00:00.395417
+	collecting tasks ∆:  0:00:00.403653
+	SIMULATION_STEP(steps=37) ∆:  0:00:00.704410
+			qualified inventory, db query ∆:  0:00:00.140441
+	Inventory.pull_inventory ∆:  0:00:00.169664
+			-qualified inventory ∆:  0:00:00.351782
+		Inventory.restock_list() ∆:  0:00:00.431811
+	collecting tasks ∆:  0:00:00.441017
+	SIMULATION_STEP(steps=38) ∆:  0:00:00.728219
+			qualified inventory, db query ∆:  0:00:00.141302
+	Inventory.pull_inventory ∆:  0:00:00.172297
+	advancing 300 shoppers ∆:  0:00:00.108257
+			-qualified inventory ∆:  0:00:00.362100
+		Inventory.restock_list() ∆:  0:00:00.450338
+	collecting tasks ∆:  0:00:00.459849
+	SIMULATION_STEP(steps=39) ∆:  0:00:00.784887
+			qualified inventory, db query ∆:  0:00:00.169597
+	Inventory.pull_inventory ∆:  0:00:00.201043
+	advancing 300 shoppers ∆:  0:00:00.103373
+			-qualified inventory ∆:  0:00:00.310924
+		Inventory.restock_list() ∆:  0:00:00.387512
+	collecting tasks ∆:  0:00:00.397020
+	SIMULATION_STEP(steps=40) ∆:  0:00:00.747940
+			qualified inventory, db query ∆:  0:00:00.151339
+	Inventory.pull_inventory ∆:  0:00:00.177509
+	advancing 300 shoppers ∆:  0:00:00.105262
+			-qualified inventory ∆:  0:00:00.310364
+		Inventory.restock_list() ∆:  0:00:00.385949
+	collecting tasks ∆:  0:00:00.409647
+	SIMULATION_STEP(steps=41) ∆:  0:00:00.746246
+			qualified inventory, db query ∆:  0:00:00.141272
+	Inventory.pull_inventory ∆:  0:00:00.167862
+	advancing 300 shoppers ∆:  0:00:00.126632
+			-qualified inventory ∆:  0:00:00.394738
+		Inventory.restock_list() ∆:  0:00:00.481231
+	collecting tasks ∆:  0:00:00.492185
+	SIMULATION_STEP(steps=42) ∆:  0:00:00.835722
+			qualified inventory, db query ∆:  0:00:00.135326
+	Inventory.pull_inventory ∆:  0:00:00.167164
+	advancing 300 shoppers ∆:  0:00:00.102817
+			-qualified inventory ∆:  0:00:00.314577
+		Inventory.restock_list() ∆:  0:00:00.399787
+	collecting tasks ∆:  0:00:00.408863
+	SIMULATION_STEP(steps=43) ∆:  0:00:00.725067
+			qualified inventory, db query ∆:  0:00:00.139617
+	Inventory.pull_inventory ∆:  0:00:00.167512
+	advancing 300 shoppers ∆:  0:00:00.119261
+			-qualified inventory ∆:  0:00:00.311178
+		Inventory.restock_list() ∆:  0:00:00.391288
+	collecting tasks ∆:  0:00:00.407442
+	SIMULATION_STEP(steps=44) ∆:  0:00:00.746332
+			qualified inventory, db query ∆:  0:00:00.140416
+	Inventory.pull_inventory ∆:  0:00:00.168732
+	advancing 300 shoppers ∆:  0:00:00.123162
+			-qualified inventory ∆:  0:00:00.304161
+		Inventory.restock_list() ∆:  0:00:00.379579
+	collecting tasks ∆:  0:00:00.389163
+	SIMULATION_STEP(steps=45) ∆:  0:00:00.728097
+			qualified inventory, db query ∆:  0:00:00.134143
+	Inventory.pull_inventory ∆:  0:00:00.158838
+	advancing 300 shoppers ∆:  0:00:00.132752
+			-qualified inventory ∆:  0:00:00.350416
+		Inventory.restock_list() ∆:  0:00:00.430354
+	collecting tasks ∆:  0:00:00.441786
+	SIMULATION_STEP(steps=46) ∆:  0:00:00.784379
+			qualified inventory, db query ∆:  0:00:00.137856
+	Inventory.pull_inventory ∆:  0:00:00.167550
+	advancing 300 shoppers ∆:  0:00:00.146837
+			-qualified inventory ∆:  0:00:00.344009
+		Inventory.restock_list() ∆:  0:00:00.424128
+	collecting tasks ∆:  0:00:00.435683
+	SIMULATION_STEP(steps=47) ∆:  0:00:00.805583
+			qualified inventory, db query ∆:  0:00:00.140872
+	Inventory.pull_inventory ∆:  0:00:00.169161
+	advancing 300 shoppers ∆:  0:00:00.121632
+			-qualified inventory ∆:  0:00:00.305481
+		Inventory.restock_list() ∆:  0:00:00.390948
+	collecting tasks ∆:  0:00:00.399712
+	SIMULATION_STEP(steps=48) ∆:  0:00:00.741313
+			qualified inventory, db query ∆:  0:00:00.144278
+	Inventory.pull_inventory ∆:  0:00:00.172415
+	advancing 300 shoppers ∆:  0:00:00.119279
+			-qualified inventory ∆:  0:00:00.306837
+		Inventory.restock_list() ∆:  0:00:00.381732
+	collecting tasks ∆:  0:00:00.396768
+	SIMULATION_STEP(steps=49) ∆:  0:00:00.741401
+			qualified inventory, db query ∆:  0:00:00.133255
+	Inventory.pull_inventory ∆:  0:00:00.158473
+	advancing 300 shoppers ∆:  0:00:00.132903
+			-qualified inventory ∆:  0:00:00.342556
+		Inventory.restock_list() ∆:  0:00:00.418524
+	collecting tasks ∆:  0:00:00.427971
+	SIMULATION_STEP(steps=50) ∆:  0:00:00.774862
+			qualified inventory, db query ∆:  0:00:00.137611
+	Inventory.pull_inventory ∆:  0:00:00.166133
+	advancing 300 shoppers ∆:  0:00:00.157263
+			-qualified inventory ∆:  0:00:00.343136
+		Inventory.restock_list() ∆:  0:00:00.421891
+	collecting tasks ∆:  0:00:00.432470
+	SIMULATION_STEP(steps=51) ∆:  0:00:00.896041
+			qualified inventory, db query ∆:  0:00:00.141439
+	Inventory.pull_inventory ∆:  0:00:00.168626
+	advancing 300 shoppers ∆:  0:00:00.102430
+			-qualified inventory ∆:  0:00:00.301991
+		Inventory.restock_list() ∆:  0:00:00.375208
+	collecting tasks ∆:  0:00:00.385647
+	SIMULATION_STEP(steps=52) ∆:  0:00:00.731255
+			qualified inventory, db query ∆:  0:00:00.148218
+	Inventory.pull_inventory ∆:  0:00:00.173277
+	advancing 300 shoppers ∆:  0:00:00.117899
+			-qualified inventory ∆:  0:00:00.300276
+		Inventory.restock_list() ∆:  0:00:00.384637
+	collecting tasks ∆:  0:00:00.394945
+	SIMULATION_STEP(steps=53) ∆:  0:00:00.771617
+			qualified inventory, db query ∆:  0:00:00.136557
+	Inventory.pull_inventory ∆:  0:00:00.161630
+	advancing 300 shoppers ∆:  0:00:00.135295
+			-qualified inventory ∆:  0:00:00.338042
+		Inventory.restock_list() ∆:  0:00:00.413723
+	collecting tasks ∆:  0:00:00.423994
+	SIMULATION_STEP(steps=54) ∆:  0:00:00.794305
+			qualified inventory, db query ∆:  0:00:00.143445
+	Inventory.pull_inventory ∆:  0:00:00.176469
+	advancing 300 shoppers ∆:  0:00:00.151563
+			-qualified inventory ∆:  0:00:00.379390
+		Inventory.restock_list() ∆:  0:00:00.462628
+	collecting tasks ∆:  0:00:00.476720
+	SIMULATION_STEP(steps=55) ∆:  0:00:00.910228
+			qualified inventory, db query ∆:  0:00:00.187787
+	Inventory.pull_inventory ∆:  0:00:00.213633
+	advancing 300 shoppers ∆:  0:00:00.160017
+			-qualified inventory ∆:  0:00:00.318542
+		Inventory.restock_list() ∆:  0:00:00.392217
+	collecting tasks ∆:  0:00:00.402263
+	SIMULATION_STEP(steps=56) ∆:  0:00:00.866079
+			qualified inventory, db query ∆:  0:00:00.143740
+	Inventory.pull_inventory ∆:  0:00:00.168305
+	advancing 300 shoppers ∆:  0:00:00.153191
+			-qualified inventory ∆:  0:00:00.355570
+		Inventory.restock_list() ∆:  0:00:00.429078
+	collecting tasks ∆:  0:00:00.439157
+	SIMULATION_STEP(steps=57) ∆:  0:00:00.848105
+			qualified inventory, db query ∆:  0:00:00.138820
+	Inventory.pull_inventory ∆:  0:00:00.165758
+	advancing 300 shoppers ∆:  0:00:00.150238
+			-qualified inventory ∆:  0:00:00.364360
+		Inventory.restock_list() ∆:  0:00:00.453626
+	collecting tasks ∆:  0:00:00.463999
+	SIMULATION_STEP(steps=58) ∆:  0:00:00.865329
+			qualified inventory, db query ∆:  0:00:00.191315
+	Inventory.pull_inventory ∆:  0:00:00.226302
+	advancing 300 shoppers ∆:  0:00:00.161774
 Traceback (most recent call last):
-  File "store/main.py", line 296, in <module>
+  File "store/main.py", line 275, in <module>
     run()
-  File "store/main.py", line 288, in run
+  File "store/main.py", line 267, in run
     simulate_day(Day.SUNDAY, lanes)
   File "/Users/fatimakahbi/Desktop/thesis/store/models/Base.py", line 92, in wrapper
     return func(*args, **kwargs)
-  File "store/main.py", line 152, in simulate_day
-    restock_list = Inventory.restock_list(session)
-  File "/Users/fatimakahbi/Desktop/thesis/store/models/Inventory.py", line 333, in restock_list
-    shelf_space = available_shelf_space(prod.grp_id, session)
-  File "/Users/fatimakahbi/Desktop/thesis/store/models/Inventory.py", line 126, in available_shelf_space
-    .filter(ModelInventory.grp_id == grp_id).first()[0]
-  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/orm/query.py", line 3215, in first
-    ret = list(self[0:1])
-  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/orm/query.py", line 3007, in __getitem__
-    return list(res)
-  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/orm/query.py", line 3317, in __iter__
-    return self._execute_and_instances(context)
-  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/orm/query.py", line 3342, in _execute_and_instances
-    result = conn.execute(querycontext.statement, self._params)
-  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/engine/base.py", line 988, in execute
-    return meth(self, multiparams, params)
-  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/sql/elements.py", line 287, in _execute_on_connection
-    return connection._execute_clauseelement(self, multiparams, params)
-  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/engine/base.py", line 1107, in _execute_clauseelement
-    distilled_params,
-  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/engine/base.py", line 1248, in _execute_context
-    e, statement, parameters, cursor, context
-  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/engine/base.py", line 1468, in _handle_dbapi_exception
-    util.reraise(*exc_info)
-  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/util/compat.py", line 129, in reraise
-    raise value
-  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/engine/base.py", line 1244, in _execute_context
-    cursor, statement, parameters, context
-  File "/Users/fatimakahbi/.virtualenvs/thesis-env/lib/python3.7/site-packages/sqlalchemy/engine/default.py", line 552, in do_execute
-    cursor.execute(statement, parameters)
-  File "/Users/fatimakahbi/.virtualenvs/thesis-env/bin/../lib/python3.7/encodings/utf_8.py", line 15, in decode
-    def decode(input, errors='strict'):
-KeyboardInterrupt
+  File "store/main.py", line 97, in simulate_day
+    open_lanes = Lane.manage(lanes, open_lanes, session)  # expand & open -OR- collapse
+  File "/Users/fatimakahbi/Desktop/thesis/store/models/Lane.py", line 175, in manage
+    lanes[i].print[i]
+TypeError: 'method' object is not subscriptable
