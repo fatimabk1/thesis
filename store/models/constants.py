@@ -2,6 +2,8 @@ from datetime import datetime, time, timedelta
 from enum import IntEnum
 import sys
 
+
+# --------------------------------------------------------------------- GENERAL
 CLOCK = datetime(2019, 9, 15, 10, 0)  # SUNDAY
 TRUCK_DAYS = 2
 EOD_FLAG = False
@@ -9,43 +11,31 @@ PRODUCT_COUNT = 100  # total # of products in db 3k
 CATEGORY_COUNT = 10  # total # of categories in db 100
 # PRODUCTS_PER_CATEGORY = int(PRODUCT_COUNT / CATEGORY_COUNT) 3000
 PRODUCTS_PER_CATEGORY = 10
+SHOPPER_ADD = 300
 
-# ------------- performance monitoring
-LOGGING = True
-curr = None
+# store time flags
+CURRENT_SHIFT = None
 
-
-def log(message=None):
-    if LOGGING:
-        curr = datetime.now()
-        if message:
-            message += ": "
-            print(message, curr)
-        return curr
+# runtime
+HOURS_PER_DAY = 14
+day_steps = HOURS_PER_DAY * 60
+HOURS_RUN = 1					# hours to run simulation
+RUN_TIME = HOURS_RUN * 60		# HOURS_RUN converted to minutes
 
 
-def delta(message, prev):
-    if LOGGING:
-        curr = datetime.now()
-        diff = curr - prev
-        message += " ∆: "
-        print(message, curr - prev)
-        if diff > timedelta(milliseconds=100):
-            print(message, curr - prev, file=sys.stderr)
+# values correspond to the t_step at which the store opens, closes, etc.
+class StoreStatus(IntEnum):
+    OPEN = 20  # 2 * 60  # 8-10AM --> pre-open
+    SHIFT_CHANGE = 7 * 60  # 3PM --> shift change
+    CLOSING_SOON = 11 * 60  # 7PM --> 1 hr closing warning
+    CLOSED = 12 * 60  # 8-10PM --> post-close
 
 
-# ----------------------------------- PULLING DATA
-categories = []  # ordered by category.id; access via categories[id-1]
-products = []  # ordered by product.grp_id ;access products[id-1]
+# pre-open, employees work from 8am - 10am
+# store hours: 10am - 8pm
+# post-close, employees work from 8pm - 10pm
 
 
-TASK_UNLOAD = 0
-TASK_RESTOCK = 1
-TASK_TOSS = 2
-TASK_CASHIER = 3
-
-
-# ------------------------------------------------------------------------------------------------ CONSTANTS & ENUMS
 class Day(IntEnum):
     SUNDAY = 0
     MONDAY = 1
@@ -56,9 +46,19 @@ class Day(IntEnum):
     SATURDAY = 6
 
 
+days = [Day.SUNDAY, Day.MONDAY, Day.TUESDAY, Day.WEDNESDAY,
+        Day.THURSDAY, Day.FRIDAY, Day.SATURDAY]
+categories = []  # ordered by category.id; access via categories[id-1]
+products = []  # ordered by product.grp_id ;access products[id-1]
+product_stats = {}  # product_stats[grp_id] = {"shelf": 0, "back": 0, "pending": 0}
+
 NUM_DAYS = 7	 # 7 days in a week
 DAY_START = 10	 # store opens at 10:00 am
 
+
+# --------------------------------------------------------------------- LANES
+CHECKOUT_MIN = 7
+CHECKOUT_MAX = 12
 
 MANAGE_FREQUENCY = 1  # manage() evaluates average lane qtime and qlen every MANAGE_FREQUENCY minutes
 MANAGE_DELAY = None  # after manage() is executed, manage is not called again for at least MANAGE_DELAY minutes
@@ -72,46 +72,35 @@ QLEN_MAX = 5  # if avg_qlen > QLEN_MAX --> open more lanes
 QLEN_MIN = 2  # if avg_qlen < QLEN_MIN --> close some lanes
 RESTOCK_THRESHOLD = 100  # if shelved_stock falls below this value, restock from back_stock
 
-# ------------------------------------------------------------------------------------------------ PARAMATERS
-CHECKOUT_MIN = 2
-CHECKOUT_MAX = 5
-STOCK_MIN = 40  # this group of paramaters set the speed restraints for checking out, restocking, etc.		 
+
+# --------------------------------------------------------------------- EMPLOYEE
+TASK_UNLOAD = 0
+TASK_RESTOCK = 1
+TASK_TOSS = 2
+TASK_CASHIER = 3
+
+STOCK_MIN = 40  # max toss/restock per t_step
 STOCK_MAX = 100
 UNLOAD_MIN = 10  # in terms of lots
 UNLOAD_MAX = 30
 
-
 MAX_LANES = 30				    # max possible lanes
 MIN_LANES = 2					# num of open lanes at start
-
-HOURS_RUN = 1					# hours to run simulation
-RUN_TIME = HOURS_RUN * 60		# HOURS_RUN converted to minutes
 
 # initally min=10, max=50
 SHOPPER_MIN = 10                # min number of items a shopper will attempt to purchase
 SHOPPER_MAX = 30                # max number of items a shopper will attempt to purchase
-NUM_EMPLOYEES = 100
-
+NUM_EMPLOYEES = 147
 
 WAGE_MIN = 8
 WAGE_MAX = 18
 
-
-# ------------------------------------------------------------- VARS/FUNCTIONS RELATED TO EMPLOYEE SHIFTS & TIME
 
 # specific times an employee works
 class Shift(IntEnum):
     MORNING = 0  # 8am - 3pm, 7 hours
     EVENING = 1  # 3pm - 10pm, 7 hours
     OFF = 2
-
-
-# store time flags
-CURRENT_SHIFT = None
-BEFORE = False
-OPEN = True
-CLOSED = False
-CLOSING_SOON = False
 
 
 def shift_change():
@@ -121,26 +110,95 @@ def shift_change():
     return False
 
 
-# # pre-open, employees work from 8am - 10am
-# def store_before():
-#     if time(CLOCK.hour, CLOCK.minute) < time(10, 0):
-#         return True
-#     else:
-#         return False
+# --------------------------------------------------------------------- performance monitoring
+LOGGING = True
+curr = None
 
 
-# # store hours: 10am - 8pm
-# def store_open():
-#     if (time(CLOCK.hour, CLOCK.minute) >= time(10, 0) and
-#             time(CLOCK.hour, CLOCK.minute) < time(20, 0)):
-#         return True
-#     else:
-#         return False
+tracking = []
 
 
-# # post-close, employees work from 8pm - 10pm
-# def store_closed():
-#     if time(CLOCK.hour, CLOCK.minute) >= time(20, 0):
-#         return True
-#     else:
-#         return False
+class Performance:
+    def __init__(self, msg, val, step=None):
+        self.step = step
+        self.message = msg
+        self.value = val
+
+    def print(self):
+        step = str(self.step)
+        while len(step) < 3:
+            step = '0' + step
+        print(step + " -- " + self.message,
+              self.value,
+              file=sys.stderr)
+
+
+def log(message=None):
+    if LOGGING:
+        curr = datetime.now()
+        if message:
+            message += ": "
+            print(message, curr)
+        return curr
+
+
+def delta(message, prev, step=None):
+    if LOGGING:
+        curr = datetime.now()
+        diff = curr - prev
+        message += " ∆: "
+        print(message, diff)
+        if step is None:
+            if len(tracking) == 0:
+                step == 0
+            else:
+                step = tracking[len(tracking) - 1].step
+        p = Performance(message, diff, step)
+        tracking.append(p)
+        assert(len(tracking) > 0)
+
+
+# def avg_datetime(lst):
+#     total = timedelta(0)
+#     for td in lst:
+#         total += td
+#     sum_of_time = sum(map(datetime.datetime.timestamp, lst)
+
+
+def print_tracking():
+    stats = {}
+    for perf in tracking:
+        if perf.message not in stats:
+            stats[perf.message] = {'lst': [], 'min': -1, 'max': -1, 'avg': -1}
+        stats[perf.message]['lst'].append(perf.value)
+
+    for msg in stats:
+        stats[msg]['lst'].sort()
+        stats[msg]['min'] = stats[msg]['lst'][0]
+        stats[msg]['max'] = stats[msg]['lst'][len(stats[msg]['lst']) - 1]
+        total = timedelta(0)
+        for td in stats[msg]['lst']:
+            total += td
+        stats[msg]['avg'] = total / len(stats[msg]['lst'])
+
+    for msg in stats:
+        print(msg, file=sys.stderr)
+        print("min = ", stats[msg]['min'], file=sys.stderr)
+        print("max = ", stats[msg]['max'], file=sys.stderr)
+        print("avg = ", stats[msg]['avg'], file=sys.stderr)
+        print("\n")
+
+
+    # tracking.sort(key=lambda perf: (perf.message, perf.value), reverse=True)
+    # msg = tracking[0].message
+
+    # count, total = 0, timedelta(0)
+    # for perf in tracking:
+    #     if msg != perf.message:
+    #         print("AVERAGE = ", total / count, file=sys.stderr)
+    #         print("\n\n NEW MESSAGE \n\n", file=sys.stderr)
+    #         count, total = 0, timedelta(0)
+    #         msg = perf.message
+    #     perf.print()
+    #     count += 1
+    #     total += perf.value

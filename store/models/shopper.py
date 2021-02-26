@@ -1,20 +1,21 @@
 from sqlalchemy import func
+from sqlalchemy.sql.sqltypes import Boolean
+from sqlalchemy.sql.expression import false
 from models import ModelInventory
 from models.Base import check_session, check_object_status
 from models.Cart import ModelCart
 from models.Product import ModelProduct, ModelCategory
-from sqlalchemy import (Column, Integer, Float)
+from sqlalchemy import Column, Integer, Float, Boolean
 import random
 from datetime import date
 from enum import IntEnum
 from tabulate import tabulate
-
 from models import (Base,
                     provide_session,
                     ModelRevenue,
                     ModelQtime)
 # CATEGORY_COUNT, SHOPPER_MIN, SHOPPER_MAX
-from models import Const, log, delta
+from models import Const, log, delta, StoreStatus
 from models import Cart
 
 # random.seed(time.clock())
@@ -50,6 +51,7 @@ class ModelShopper(Base):
     qtime = Column(Integer, default=None)
     status = Column(Integer, default=Status.INERT)
     total = Column(Float, default=0.00)
+    deleted = Column(Boolean, default=False)
 
     def print(self):
         stat_string = ""
@@ -108,9 +110,11 @@ class ModelShopper(Base):
 
     def set_status(self, stat):
         self.status = stat
+        if stat == Status.DONE:
+            self.deleted = True
 
-    def reset_browse(self):
-        if Const.CLOSING_SOON:
+    def reset_browse(self, t_step):
+        if t_step >= StoreStatus.CLOSING_SOON:
             self.browse_mins = random.randint(1, 3)
         else:
             self.browse_mins = random.randint(2, 5)
@@ -125,20 +129,20 @@ class ModelShopper(Base):
         self.lane = lid
 
     @provide_session
-    def step(self, prod_lst, inv_lookup, session=None):
+    def step(self, t_step, inv_lookup, session=None):
+        # print("inside step")
         CLOCK = Const.CLOCK
 
         if self.status == Status.INERT:
-            if Const.CLOSED:
-                # TODO: mark as delted
-                pass
+            if t_step >= StoreStatus.CLOSED:
+                self.deleted = True
+
             elif CLOCK.minute == self.start_min:
                 # print("\tSTARTING TO SHOP!")
                 self.status = Status.SHOPPING
-                self.reset_browse()
+                self.reset_browse(t_step)
 
         elif self.status == Status.SHOPPING:
-
             # done shopping
             if self.quota == 0:
                 self.status = Status.QUEUE_READY
@@ -147,16 +151,17 @@ class ModelShopper(Base):
             # select grp or keep browsing
             else:
                 if self.browse_mins == 1:
-                    # print("\tSELECTING NOW!")
-                    assert(len(prod_lst) > 0 and len(inv_lookup) > 0)
-
-                    grp_id = prod_lst.pop()
+                    grp_id = random.randint(1, Const.PRODUCT_COUNT)
+                    assert(grp_id in inv_lookup)
                     inv_lst = inv_lookup[grp_id]
-
+                    # inv_lst = [inv for inv in inv_lookup[grp_id] if inv.deleted is False]
+                    inv_lst.sort(key=lambda x: (x.deleted, x.sell_by, x.shelved_stock))
                     while(inv_lst[0].shelved_stock == 0):
-                        inv = inv_lst.pop(0)
-                        inv_lst.append(inv)
-                    assert(inv_lst[0].shelved_stock != 0)
+                        inv_lst[0].print()
+                        grp_id = random.randint(1, Const.PRODUCT_COUNT)
+                        inv_lst = inv_lookup[grp_id]
+                        exit(0)
+                    assert(inv_lst[0].shelved_stock != 0), "grp {} has no shelf stock".format(grp_id)
                     inv = inv_lst[0]
                     prev_shelf = inv.shelved_stock
                     Cart.add_inv_item(self.id, inv, session)
@@ -166,22 +171,17 @@ class ModelShopper(Base):
                     self.quota -= 1
                     self.cart_count += 1
                     self.total += Const.products[grp_id - 1].get_price()
-                    self.reset_browse()
+                    self.reset_browse(t_step)
+                    Const.product_stats[grp_id - 1]["shelf"] -= 1
                 else:
                     self.browse_mins -= 1
 
         elif self.status == Status.DONE:
+            self.deleted = True
             today = date(CLOCK.year, CLOCK.month, CLOCK.day)
-
-            rev = ModelRevenue(
-                stamp=today,
-                value=self.total)
+            rev = ModelRevenue(stamp=today, value=self.total)
             session.add(rev)
-
-            qt = ModelQtime(
-                lane=self.lane,
-                stamp=today,
-                time=self.qtime)
+            qt = ModelQtime(lane=self.lane, stamp=today, time=self.qtime)
             session.add(qt)
         else:
             pass
@@ -197,17 +197,32 @@ def create(n, session=None):
 def print_active_shoppers(session=None):
     print("\t--- ACTIVE SHOPPERS --- ")
     count = session.query(func.count(ModelShopper.id), ModelShopper.status)\
+        .filter(ModelShopper.deleted == False)\
         .group_by(ModelShopper.status)\
         .order_by(ModelShopper.status).all()
-    shoppers = session.query(ModelShopper)\
-        .filter(ModelShopper.status != Status.DONE,
-                ModelShopper.status != Status.INERT,
-                ModelShopper.status != Status.SHOPPING)\
-        .order_by(ModelShopper.status).all()
+
+    shoppers = session.query(ModelShopper).all()
+    shoppers = [shopper
+                for shopper in shoppers
+                if shopper.deleted is False
+                and (shopper.status == Status.QUEUEING
+                     or shopper.status == Status.SHOPPING)]
+    shoppers.sort(key=lambda x: x.status)
+        # .filter(ModelShopper.deleted is False)\
+        # .filter(ModelShopper.status != Status.DONE,
+        #         ModelShopper.status != Status.INERT,
+        #         ModelShopper.status != Status.SHOPPING)\
+        # .order_by(ModelShopper.status).all()
+
     count = [sublist[0] for sublist in count]
     while len(count) < 6:
         count.append(0)
-    print("COUNT: inert = {}, shopping = {}, qready = {}, queueing = {}, checkout = {}, done = {}"\
-          .format(count[0], count[1], count[2], count[3], count[4], count[5]))
+    not_del = 0
+    for quantity in count:
+        not_del += quantity
+    total = (Const.HOURS_PER_DAY - 2) * Const.SHOPPER_ADD
+
+    print("COUNT: inert = {}, shop = {}, qready = {}, queue = {}, check = {}, done = {}, del = {}\n"\
+          .format(count[0], count[1], count[2], count[3], count[4], count[5], total - not_del))
     for s in shoppers:
         s.print()

@@ -43,17 +43,19 @@
         - step(sid, CLOCK, session) @done
         - create(n, session) @done
 - Emp
-    - inside
+    - inside @done
         - do_task()  @done
         - set_task(grp_id)  @done
         - get_task() @done
         - set_role(role)  @done
         - get_role() @done
-        - get_checkout_speed() @done
-        - get_stock_speed() @done
+        - get_speed() @done
         - get_schedule(day)  @done
         - calculate_wage() @done
-    - floating
+        - set_cashier() @done
+        - remove_cashier() @done
+    - floating @done
+        - pull_employees() --> return emps = {"available": [], "unavailable": []} @done
         - get_employee(lid)  @done
         - return_employee(eid) @done
         - swap_employee(eid, lid) @done
@@ -61,7 +63,7 @@
         - set_schedule(day, session) @done
         - prepare_employees(session)  @done 
 - Lane
-    - inside
+    - inside @done
         - enq(sid) @done
             - enq() test @done
         - deq() --> sid @done
@@ -69,20 +71,20 @@
         - set_emp(eid) @done
             - set_emp test @done
         - close() @done
-            - close() test
+            - close() test @done
         - open() @done 
             - open() test @done
         - step() @done
             - step() test @done
-    - floating
+    - floating @done
         - manage() @done
-            - manage() test
+            - manage() test @done
         - shortest() @done
             - shortest() tested via enq @done
         - collapse() @done
-            - collapse() test
+            - collapse() test @done
         - expand() @done
-            - expand() test
+            - expand() test @done
         - total_shoppers() @done
             - total_shoppers() test @done
         - avg_qlen() @done
@@ -103,20 +105,68 @@
     - adjust manage_inventory() to set emp_q = emp_q * product.lot_quantity() @done
     - update build.py initialize() @done
     - check for inv_list empty while quantity > 0 --> not ordering enough or fast enough @done
-    - Fix issue with wrong emp_q and quantity update. Assigning back wrong? For sure redundant updates.
+    - Fix issue with wrong emp_q and quantity update. Assigning back wrong? For sure redundant updates. @done
+    - Add is_deleted column to all tables where deletions occur @done
+    - Add check_and_delete function for inv + put where it needs to go @done
+    - pull inventory once at the start of each time step & pass to: @done
+        - shopper.step() @done
+        - Inventory.restock_list() / unload_list() / toss_list() @done
+            - have each function sort these lists as desired @done
+    - Inventory.pull_inventory @done
+        - Pull all inv + make list of qualified via programming in functions @done
+        - qualified_inventory, db query @done
+    - Pull inventory once at start of day
+    - Optomize Lane.get_carts_sids()
+
+
+    - Advancing all shoppers / 1.3646
+        - O(n) breakdown
+    - qualified inventory --> Inventory.pull_inventory()  / 0.4326 @done
+    - create 300 shoppers / 0.484
+    - Lane.get_carts_sids()  / 0.259
+        - "-qualified inventory, db query" 
+    - Employee.pull_employees() / 0.155
+    - Shopper.step() / 0.0461
+    - Inventory.toss_list() / 0.03
     - Rework order() and order_inventory() for improved runtime
-    - Add is_deleted column to all tables where deltions occur
-    - Add check_and_delete function for inv + put where it needs to go
+
+    - restock(): qualified inventory, db query / 0.123 min; 0.899 max; avg ~ 0.3
+    - unload()?: qualified inventory db / 0.281 min; 1.364 max; avg ~ 0.6
+    - restock(): qualified inventory sort / 0.045 min; 0.259 max; avg ~ 0.06
+    - Inventory.restock_list() / 0.408 min; 1.589 max; avg ! 0.8
+    - Inventory.toss_list() / 0.005 min; 0.043 max
+    - Inventory.unload_list() / 0.004 min; 0.008 max
+    - Lane.get_carts_sids() / 0.000 min; 0.361
+    - Lane.manage() / 0.000 min; 0.034 max; avg ~ 0.000
+    - Lane.step() / 0.000 min; 0.028 max
+    - Shopper.step() / 0.000 min; 0.010 max; avg ~ 0.00
+    - Inventory.pull_inventory / 0.146 min; 0.947 max; avg ~ 0.33
+    - Product.select_grp() / 0.000 min; 0.008 max
+    - SIMULATION_STEP() / 0.014 min; 3.577 max 
+    - advancing all lanes / 0.000 min; 0.038 max
+    - collecting tasks...task type = 0 / 0.004 min; 0.008 max
+    - collecting tasks...task type = 1 / 0.408 min; 1.589 max; avg ~ 0.8
+    - collecting tasks...task type = 2 / 0.005 min; 0.043 max
+    - create 300 shoppers / 0.122 min; 0.393 max
+        - create all at start of program + reset all shoppers at start of day
+    - Employee.pull_employees() / 0.002 min; 0.043 max
+    - setup_lanes_and_employees() / 0.071
+    - simulate_day() / 16:29
+    - Rework lane open and close: don't query for employee each time via request and return @done
+        - instead, pass a list of employees to Lane.step(employees[]) and pop or append @done
+    - Rework lane scanning, get_cart_size, etc. @done
+    - Improve way of telling if task list is empty to avoid redundant work @done
+    - Change the before/open/closed to enums in class StoreStatus @done
 - Simulator
     - day
-        - pre-day
-            - employees only
-        - step all
-        - employee shift change
-        - post-day
-            - employees only
+        - only pull task lists at correct times of day, remove todo[] @done
+        - pre-day (employees only - unload)
+        - day (shoppers and employees - restock)
+        - post-day (employees only - toss + restock)
+        - employee shift change: change shifts + add time to emp.worked_time
     - month
         - pay labor
         - order inventory
 - Report
+    - 
 

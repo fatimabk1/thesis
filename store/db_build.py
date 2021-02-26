@@ -1,5 +1,7 @@
 from datetime import timedelta
 from sqlalchemy import func
+from sqlalchemy.sql.expression import false
+
 from models import Shopper, Lane, Employee, Inventory, Const, Product
 from models import (ModelShopper,
                     ModelEmployee,
@@ -37,6 +39,10 @@ def initialize(session=None):
             p = ModelProduct()
             p.setup(c.id)
             session.add(p)
+            grp_id = i * Const.PRODUCTS_PER_CATEGORY + j
+            Const.product_stats[grp_id] = {"shelf": 0,
+                                            "back": 0,
+                                            "pending": 0}
             c.count += 1
     delta("\tLOOP_creating all products", start)
     t = log("\tcommiting products + products")
@@ -53,38 +59,71 @@ def initialize(session=None):
     Const.TRUCK_DAYS = 2
     delta("\t\tordering inventory", t)
 
+    all_inventory = session.query(ModelInventory)\
+        .order_by(ModelInventory.pending_stock).all()
+    print("~~~ INVENTORY: CREATED / PENDING")
+    all_inventory[0].print()
+
+    Inventory.print_stock_status(session)
+
     # UNLOADS
     print("collecting unload list...")
+    inventory_lookup = Inventory.pull_inventory(session)
     t = log("\t\tpulling unload list")
-    lookup = Inventory.unload_list(session)
+    lookup = Inventory.unload_list(inventory_lookup)
     delta("\t\tpulling unload list", t)
+
     print("beginning to unload...")
-    start = log("\tunload all products")
-    Inventory.manage_inventory(Const.TASK_UNLOAD, lookup, 1000000)
+    start = log()
+    Inventory.dispatch(Const.TASK_UNLOAD, lookup, 1000000)
+    delta("\tunload all products", start)
+    all_inventory = session.query(ModelInventory)\
+        .order_by(ModelInventory.back_stock).all()
+    print("~~~ INVENTORY: UNLOADED / BACK")
+    all_inventory[0].print()
+
+    Inventory.print_stock_status(session)
+
     t = log()
     session.commit()
-    delta("\commit unloads", t)
-    delta("\tunload all products", start)
+    delta("\tcommit unloads", t)
+    delta("\t commit + unload all products", start)
 
     # RESTOCKS
     print("beginning to RESTOCK tuples...")
-    t = log("\t\trestock_list()")
-    lookup = Inventory.restock_list(session)
+    t = log()
+    lookup = Inventory.restock_list(inventory_lookup)
     delta("\t\trestock_list()", t)
-    start = log("\trestocking all products")
-    Inventory.manage_inventory(Const.TASK_RESTOCK, lookup, 10000000)
-    delta("\trestocking all products", start)
-    t = log("\tcommiting all restocks")
+
+    t = log()
+    Inventory.dispatch(Const.TASK_RESTOCK, lookup, 10000000)
+    delta("\trestocking all products", t)
+    all_inventory = session.query(ModelInventory)\
+        .order_by(ModelInventory.shelved_stock).all()
+    print("~~~ INVENTORY: RESTOCKED / SHELF - after dispatch()")
+    all_inventory[0].print()
+
+    t = log()
     session.commit()
     delta("\tcommitting all products", t)
+
     print("starter inventory completed.")
+    lookup = Inventory.restock_list(inventory_lookup)
+    session.commit()
+    all_inventory = session.query(ModelInventory)\
+        .order_by(ModelInventory.shelved_stock).all()
+    print("~~~ INVENTORY: RESTOCKED / SHELF - after session.commit()")
+    all_inventory[0].print()
 
     print("starter inventory:")
-    for prod in Const.products:
-        vals = session.query(
-            func.sum(ModelInventory.shelved_stock))\
-            .filter(ModelInventory.grp_id == prod.grp_id).one()
-        assert(vals is not None and vals[0] > 0)
+    Inventory.print_stock_status(session)
+
+    # for prod in Const.products:
+    #     vals = session.query(
+    #         func.sum(ModelInventory.shelved_stock))\
+    #         .filter(ModelInventory.grp_id == prod.grp_id).one()
+    #     # print(vals, vals[0])
+    #     assert(vals is not None and vals[0] > 0)
 
 
 @provide_session
@@ -109,6 +148,8 @@ def run():
     t = log("initialize()")
     initialize()
     delta("initialize()", t)
+    print("store open = {}, shift change = {}"
+          .format(Const.StoreStatus.OPEN, Const.StoreStatus.SHIFT_CHANGE))
 
 
 if __name__ == '__main__':

@@ -1,5 +1,6 @@
 from models.Base import check_session, check_object_status
-from sqlalchemy import Column, Integer, func
+from sqlalchemy import Column, Integer, func, Boolean
+from sqlalchemy.sql.expression import false
 from tabulate import tabulate
 from models import Inventory, Const, log, delta, StockType
 from models import Base, provide_session, ModelProduct, Session
@@ -12,6 +13,7 @@ class ModelCart(Base):
     shopper_id = Column(Integer)
     inventory_id = Column(Integer)
     grp_id = Column(Integer)
+    deleted = Column(Boolean, default=False)
 
     def print(self):
         print("<item_{}: sid={}, inv={}, grp={}>"
@@ -19,16 +21,6 @@ class ModelCart(Base):
                       self.shopper_id,
                       self.inventory_id,
                       self.grp_id))
-
-    def __repr__(self, session=None):
-        prod = session.query(ModelProduct)\
-            .filter(ModelProduct.grp_id == self.grp_id).one()
-        return [self.shopper_id,
-                self.id,
-                self.grp_id,
-                self.inventory_id,
-                prod.name,
-                prod.brand]
 
 
 def print_cart(sid, session=None):
@@ -66,19 +58,13 @@ def add_inv_item(sid, inv, session=None):
     inv.decrement(StockType.SHELF, 1)
 
 
-def scan_n(sid, n, session=None):
-    # print_cart(sid, session)
-    cart_list = session.query(ModelCart)\
-        .filter(ModelCart.shopper_id == sid)\
-        .order_by(ModelCart.id).all()
-
-    for row in cart_list:
+def scan_n(cart, n):
+    for inv in cart["inv"]:
         if n == 0:
             break
-        session.delete(row)
+        inv.deleted = True
         n -= 1
-        session.commit()
-    return n
+        cart["count"] -= 1
 
 
 def get_size(sid, session=None):

@@ -14,11 +14,8 @@ from models.Constants import Day
 # a specific job an employee is doing
 class Action(IntEnum):
     CASHIER = 0
-    RESTOCK = 1
-    TOSS = 2
-    UNLOAD = 3
-    IDLE = 4
-    NON_CASHIER = 5
+    OTHER = 1
+    OFF = 2
 
 
 class ModelSchedule(Base):
@@ -102,8 +99,8 @@ class ModelEmployee(Base):
 
     id = Column(Integer, primary_key=True)
     shift = Column(Integer, default=None)
-    action = Column(Integer, default=Action.IDLE)
-    tasks = Column(JSON, default=None)
+    group = Column(Integer, default=None)
+    action = Column(Integer, default=Action.OTHER)
     lane = Column(Integer, default=None)
     checkout_speed = Column(Integer, default=checkout_speed)  # items per min
     stock_speed = Column(Integer, default=stock_speed)  # items per min
@@ -125,57 +122,7 @@ class ModelEmployee(Base):
                       self.lane, self.checkout_speed) +
               ", stock_speed={}, unload_speed={}, wage={:.2f}, time={}>"
               .format(self.stock_speed, self.unload_speed,
-                      self.hourly_wage, self.time_worked) +
-              "\n\ttasks={}".format(self.tasks))
-
-    # def do_tasks(self, session=None):
-    #     assert(self.tasks is not None)
-
-    #     GRP = 0
-    #     QUANTITY = 1
-    #     ACTION = 2
-    #     emp_q = None
-
-    #     for i, tpl in enumerate(self.tasks):
-    #         if tpl[ACTION] == Action.UNLOAD:
-    #             emp_q = self.unload_speed
-    #         else:
-    #             emp_q = self.stock_speed
-
-    #         # execute task
-    #         q = 0
-    #         if tpl[ACTION] == "RESTOCK":
-    #             q, emp_q = Inventory.restock(tpl[GRP], tpl[QUANTITY], emp_q, session)
-    #             print("\tRESTOCK: q = {}, emp_q = {}".format(q, emp_q))
-    #         elif tpl[ACTION] == "TOSS":
-    #             q, emp_q = Inventory.toss(tpl[GRP], tpl[QUANTITY], emp_q, session)
-    #             print("\tTOSS: q = {}, emp_q = {}".format(q, emp_q))
-    #         elif tpl[ACTION] == "UNLOAD":
-    #             emp_q = self.unload_speed
-    #             q, emp_q = Inventory.unload(tpl[GRP], tpl[QUANTITY], emp_q, session)
-    #             print("\tUNLOAD: q = {}, emp_q = {}".format(q, emp_q))
-    #         else:
-    #             print("tpl[ACTION] = ", tpl[ACTION])
-    #             exit(2)
-
-    #         # update task status
-    #         t = (tpl[GRP], q, tpl[ACTION])
-    #         self.tasks[i] = t
-    #         # prev = curr
-
-    #         if emp_q == 0:
-    #             break
-    #     session.commit()
-    #     ret = self.tasks
-    #     self.tasks = None
-    #     return ret
-
-    def set_tasks(self, tasks):
-        self.tasks = tasks
-        self.action = Action.NON_CASHIER
-
-    def get_tasks(self):
-        return self.tasks
+                      self.hourly_wage, self.time_worked))
 
     def get_speed(self, task):
         if task == Const.TASK_CASHIER:
@@ -187,6 +134,14 @@ class ModelEmployee(Base):
         else:
             print("ERROR: Employee.get_speed() given an invalid task")
             exit(1)
+
+    def set_cashier(self, lid):
+        self.lane = lid
+        self.action = Action.CASHIER
+
+    def remove_cashier(self):
+        self.lane = None
+        self.action = Action.OTHER
 
     def get_schedule(self, day, session):
         schedule = session.query(ModelSchedule)\
@@ -209,116 +164,96 @@ class ModelEmployee(Base):
 
 
 # ---------------------------------------------------- external functions
-def create_employee(session=None):
-    emp = ModelEmployee()
-    session.add(emp)
-    session.commit()
-
-    day = Day.SUNDAY
-    for i in range(7):
-        s = ModelSchedule(
-            employee_id=emp.id,
-            day=day,
-            shift=None
-        )
-        session.add(s)
-        day += 1
-    session.commit()
+def create_employees(n, session=None):
+    assert(n % 7 == 0)
+    group_size = n / 7
+    group = 0
+    # print("group = 0")
+    for i in range(n):
+        if i != 0 and i % group_size == 0:
+            group += 1
+            # print("group = ", group)
+        emp = ModelEmployee()
+        emp.group = group
+        session.add(emp)
 
 
-# assigns employee to CASHIER action & lane;
-# called by a lane object
-@provide_session
-def request_employee(lid, session=None):
-    emps = session.query(ModelEmployee)\
-        .filter(ModelEmployee.action != Action.CASHIER)\
-        .filter(ModelEmployee.shift == Const.CURRENT_SHIFT).all()
-    if emps:
-        e = emps.pop()
-        e.action = Action.CASHIER
-        e.tasks = None
-        e.lane = lid
-        session.commit()
-        return e.id, e.checkout_speed
-    else:
-        sys.exit(
-            "request_employee() Fatal: No available employees with shift {}"
-            .format(Const.CURRENT_SHIFT))
+def pull_employees(session):
+    emps = session.query(ModelEmployee).all()
+    assert(emps is not None)
+    # for emp in emps:
+    #     emp.print()
 
-
-# assign employee a new action & removes lane
-@provide_session
-def return_employee(eid, session=None):
-    e = session.query(ModelEmployee)\
-        .filter(ModelEmployee.id == eid).one()
-    e.action = Action.IDLE
-    e.lane = None
-    session.commit()
-
-
-# returns true for if employee has a CASHIER action and lane lid
-@provide_session
-def valid_cashier(eid, lid, session=None):
-    emp = session.query(ModelEmployee)\
-        .filter(ModelEmployee.id == eid).one()
-    if emp.action == Action.CASHIER and emp.lane == lid:
-        return True
-    else:
-        return False
-
-
-# sets schedule for all employees, each works 6 days a week
-def make_week_schedule(session=None):
-    employees = session.query(ModelEmployee).all()
-    count = len(employees)
-    off_count = floor(count / 7)
-    morning_count = round((count - off_count) / 2)
-    evening_count = count - off_count - morning_count
-
-    schedule_off = []
-    day = Day.SUNDAY
-    for i in range(7):
-        oc = off_count
-        mc = morning_count
-        ec = evening_count
-        for index, emp in enumerate(employees):
-            schedule = session.query(ModelSchedule)\
-                .filter(ModelSchedule.employee_id == emp.id)\
-                .filter(ModelSchedule.day == day).one()
-
-            # fill quota of OFF employees for today
-            if oc != 0 and emp.id not in schedule_off:
-                schedule.shift = Shift.OFF
-                schedule_off.append(emp.id)
-                oc -= 1
-
+    employees = {"available": {}, "cashiers": {}, "unavailable": {}}
+    for emp in emps:
+        if emp.shift == Const.CURRENT_SHIFT:
+            if emp.action == Action.CASHIER:
+                employees["cashiers"][emp.id] = emp
             else:
-                if mc != 0:
-                    schedule.shift = Shift.MORNING
-                    mc -= 1
-                elif ec != 0:
-                    schedule.shift = Shift.EVENING
-                    ec -= 1
-        day += 1
+                employees["available"][emp.id] = emp
+        else:
+            employees["unavailable"][emp.id] = emp
 
-    session.commit()
+    # print("AVAILABLE EMPLOYEES:")
+    # s = ""
+    # for eid in employees["available"]:
+    #     s = s + str(eid) + ", "
+    # print(s)
+    # print("CASHIER EMPLOYEES:")
+    # s = ""
+    # for eid in employees["cashiers"]:
+    #     s = s + str(eid) + ", "
+    # print(s)
+    # print("UNAVAILABLE EMPLOYEES:")
+    # s = ""
+    # for eid in employees["unavailable"]:
+    #     s = s + str(eid) + ", "
+    # print(s)
+    # print("\n^pull employees")
+    return employees
+
+
+def shift_change(emp_group):
+    print("AVAILABLE EMPLOYEES:", list(emp_group["available"].keys()).sort())
+    print("CAHSIER EMPLOYEES:", list(emp_group["cashiers"].keys()).sort())
+    print("UNAVAILABLE EMPLOYEES:", list(emp_group["unavailable"].keys()).sort())
+    print("---")
+
+    employees = (list(emp_group["available"].values())
+                 + list(emp_group["cashiers"].values())
+                 + list(emp_group["unavailable"].values()))
+    emp_group["available"] = {}
+    emp_group["cashiers"] = {}
+    emp_group["unavailable"] = {}
+    for emp in employees:
+        if emp.shift != Const.CURRENT_SHIFT:
+            emp_group["unavailable"][emp.id] = emp
+        else:
+            emp_group["available"][emp.id] = emp
+
+    print("AVAILABLE EMPLOYEES:", list(emp_group["available"].keys()).sort())
+    print("CAHSIER EMPLOYEES:", list(emp_group["cashiers"].keys()).sort())
+    print("UNAVAILABLE EMPLOYEES:", list(emp_group["unavailable"].keys()).sort())
+    print("\n")
+    print("\n^Employee.shift_change()")
 
 
 # set all employee's shifts for that day according to schedule
-def set_day_schedule(day, session=None):
+def set_day_schedule(schedule, session):
+    print(schedule)
     employees = session.query(ModelEmployee).all()
+    assert(employees is not None)
     for emp in employees:
-        emp.shift = session.query(ModelSchedule)\
-            .filter(ModelSchedule.employee_id == emp.id)\
-            .filter(ModelSchedule.day == day).one().shift
+        print("\temp{}.group = {}".format(emp.id, emp.group))
+        emp.shift = schedule[emp.group]
     session.commit()
 
 
-def print_active_employees(session=None):
+def print_active_employees(session):
     print("\t--- ACTIVE EMPLOYEES --- ")
     emps = session.query(ModelEmployee)\
         .filter(ModelEmployee.shift == Const.CURRENT_SHIFT)\
-        .filter(ModelEmployee.action != Action.IDLE)\
+        .filter(ModelEmployee.action != Action.OTHER)\
         .order_by(ModelEmployee.action).all()
     for e in emps:
         e.print()

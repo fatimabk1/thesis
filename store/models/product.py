@@ -190,17 +190,3 @@ class ModelProduct(Base):
                 self.popularity,
                 self.popularity_delta
                 ]
-
-
-# return a list of n randomly selected grp_id
-def select_grp(n):
-    prod_lst = []
-    for i in range(n):
-        cid = random.randint(1, Const.CATEGORY_COUNT)
-        c = Const.categories[cid - 1]
-        start_index = (c.id - 1) * Const.PRODUCTS_PER_CATEGORY
-        end_index = c.id * Const.PRODUCTS_PER_CATEGORY - 1
-        r = random.randint(start_index, end_index)
-        p = Const.products[r]
-        prod_lst.append(p.grp_id)
-    return prod_lst

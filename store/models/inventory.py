@@ -1,5 +1,7 @@
-from sqlalchemy import Column, Integer, Date, distinct, select
+from sqlalchemy import Column, Integer, Date, Boolean
+from sqlalchemy.sql.expression import false
 import sys
+import functools
 from enum import IntEnum
 from datetime import timedelta, date
 from sqlalchemy.sql import func
@@ -28,12 +30,13 @@ class ModelInventory(Base):
     pending_stock = Column(Integer, default=None)
     available = Column(Date, default=None)  # truck -> back storage
     sell_by = Column(Date, default=None)
+    deleted = Column(Boolean, default=False)
 
     def print(self):
-        print("<inv_{}: grp={}, shelved={}, back={}, pending={}, available={}, sell_by{}>"
+        print("<inv_{}: grp={}, shelved={}, back={}, pending={}, available={}, sell_by={}, deleted={}>"
               .format((self.id), self.grp_id,
                       self.shelved_stock, self.back_stock, self.pending_stock,
-                      self.available, self.sell_by))
+                      self.available, self.sell_by, self.deleted))
 
     def __repr__(self):
         return("<inv_{}: grp={}, shelved={}, back={}, pending={}, available={}, sell_by{}>"
@@ -48,14 +51,14 @@ class ModelInventory(Base):
             self.back_stock -= n
         elif type == StockType.SHELF:
             self.shelved_stock -= n
-        # else:
-        #     assert(type == StockType.CART)
-        #     self.cart_stock -= n
+        else:
+            print("ERROR: invalid stock type: ", type)
+            exit(1)
 
-        # FIXME: no deletions --> IS_DELETED
         if (self.shelved_stock == 0
-                and self.back_stock == 0 and self.pending_stock == 0):
-            pass
+                and self.back_stock == 0
+                and self.pending_stock == 0):
+            self.deleted = True
 
     def increment(self, type, n):
         if type == StockType.PENDING:
@@ -64,77 +67,40 @@ class ModelInventory(Base):
             self.back_stock += n
         elif type == StockType.SHELF:
             self.shelved_stock += n
-        # else:
-        #     assert(type == StockType.CART)
-        #     self.cart_stock += n
 
 
 # ------------------------------------------- Inventory-Affiliated Functions
 
-# returns a grp_id indexed list of inventories[n]
+# returns a dictionary {grp_id: inv_lst}, where inv_lst sorted by sell_by
 @provide_session
-def pull_inventory(n, session=None):  # FIX
-    today = date(CLOCK.year, CLOCK.month, CLOCK.day)
+def pull_inventory(session=None):  # FIX
+    # today = date(CLOCK.year, CLOCK.month, CLOCK.day)
     t = log()
-    # START >>>>
-    # 1. Fix so that lookup has n inventories for each product
-    all_qualified_inventory = session.query(ModelInventory)\
-        .filter(ModelInventory.shelved_stock > 0)\
-        .filter(ModelInventory.sell_by >= today)\
-        .order_by(ModelInventory.grp_id,
-                  ModelInventory.sell_by,
-                  ModelInventory.shelved_stock,
-                  ModelInventory.back_stock).all()
-    delta("\t\t\tqualified inventory, db query", t)
-    if all_qualified_inventory is None:
-        return {}
+    all_inventory = session.query(ModelInventory)\
+        .order_by(ModelInventory.grp_id, ModelInventory.sell_by).all()
+    delta("\t\t\tInventory.pull_inventory(): all_inventory", t)
 
     t = log()
     lookup = {}
-    for inv in all_qualified_inventory:
+    for inv in all_inventory:
         if inv.grp_id not in lookup:
             lookup[inv.grp_id] = []
-
-        if len(lookup[inv.grp_id]) < n:
-            lookup[inv.grp_id].append(inv)
+        lookup[inv.grp_id].append(inv)
     delta("\t\t\tlookup dictionary", t)
-    delta("\t\t\t\t\tinv_lst query, limit({})".format(n), t)
+
+    for grp in lookup:
+        assert(len(lookup[grp]) > 0)
+
     return lookup
 
 
-# Returns the max number of items that can be added to shelves.
-def available_shelf_space(grp_id, session=None):
-    product = Const.products[grp_id - 1]
-
-    max_shelved = product.get_max_shelved_stock()
-    current_shelved = session.query(func.sum(ModelInventory.shelved_stock))\
-        .filter(ModelInventory.grp_id == grp_id).first()[0]
-    if current_shelved is None:
-        return max_shelved
-    else:
-        return max_shelved - current_shelved
-
-
-# Returns the max number of items that can be added to back storage
-def available_back_space(grp_id, session=None):
-    product = Const.products[grp_id - 1]
-    back_stock = session.query(func.sum(ModelInventory.back_stock))\
-        .filter(ModelInventory.grp_id == grp_id).first()[0]
-    max_back_stock = product.get_max_back_stock()
-    if back_stock is None:
-        return max_back_stock
-    else:
-        return max_back_stock - back_stock
-
-
 # creates a set of pending inventory entries for ordered stock
-def create_pending(product, sublots, session=None):
+def create_pending(product, sublots, session):
     today = date(CLOCK.year, CLOCK.month, CLOCK.day)
     for i in range(sublots):
         sell = product.get_sell_by()
         inv = ModelInventory(
             grp_id=product.grp_id,
-            # cart_stock=0,
             shelved_stock=0,
             back_stock=0,
             pending_stock=product.get_sublot_quantity(),
@@ -145,286 +111,229 @@ def create_pending(product, sublots, session=None):
     session.commit()
 
 
-def order_inventory(session=None):
+def order_inventory(session):
     today = date(CLOCK.year, CLOCK.month, CLOCK.day)
     order_cost = 0
 
-    start = log("\t\tLOOP_order inventory all products")
     for prod in Const.products:
-        start_one = log("\t\tone_product")
+        t = log()
         print("\tordering inventory --> grp ", prod.grp_id)
-        t = log("\t\t\tback_space()")
-        back_space = available_back_space(prod.grp_id, session)
-        delta("\t\t\tback_space()", t)
-        back_stock = prod.max_back_stock - back_space
+
+        curr_back = Const.product_stats[prod.grp_id - 1]["back"]
+        back_space = prod.max_back_stock - curr_back
         if back_space > prod.order_threshold:
             amount = (prod.order_amount
-                      or (prod.order_threshold * 1.5 - back_stock))
-            t = log("\t\t\torder()")
+                      or (prod.order_threshold * 1.5 - curr_back))
             money = order(prod, amount, session)
-            delta("\t\t\torder()", t)
             order_cost += money
-            c = ModelCost(stamp=today, value=order_cost, ctype="stock")
-            session.add(c)
-        delta("\t\tone_product", start_one)
-    delta("\t\tLOOP_order inventory all products", start)
-    t = log("\t\tcommiting inventory")
+
+        c = ModelCost(stamp=today, value=order_cost, ctype="stock")
+        session.add(c)
+        delta("\t\t\torder one product", t)
     session.commit()
-    delta("\t\tcommitting inventory", t)
 
 
-def order(product, quantity, session=None):
+def order(product, quantity, session):
     lot_q = product.get_lot_quantity()
     num_lots = int(floor(quantity / lot_q))
     assert(num_lots >= 2)
     sublots = int(num_lots * product.get_num_sublots())
-    t = log("\t\t\t\tcreate_pending()")
     create_pending(product, sublots, session)
-    delta("\t\t\t\tcreate_pending()", t)
+
+    # update product_stats
+    total_q = num_lots * lot_q
+    Const.product_stats[product.grp_id - 1]["pending"] += total_q
     return product.lot_price * num_lots
 
 
-def unload(inv, emp_q, quantity):
-    # print("\t\t\tunload params: inv.pending = {}, quantity = {}, emp_Q = {}"
-    #       .format(inv.pending_stock, quantity, emp_q))
-    q = min(emp_q,
-            inv.pending_stock,
-            quantity)
-    # print("\t\t\tq = ", q)
-    inv.increment(StockType.BACK, q)
-    inv.decrement(StockType.PENDING, q)
-    # emp_q -= q
-    # quantity -= q
-    # return emp_q, quantity
-    return q
+# ---------------------------------------------- update all inv for a grp
+
+def mass_restock(data, emp_q):
+    delta = 0
+    while(data["quantity"] > 0 and delta != emp_q):
+        inv = data["inventory"].pop(0)
+        q = min(emp_q,
+                inv.back_stock,
+                data["quantity"])
+        inv.increment(StockType.SHELF, q)
+        inv.decrement(StockType.BACK, q)
+        data["quantity"] -= q
+        delta += q
+        if inv.back_stock > 0:
+            data["inventory"].insert(0, inv)
+        else:
+            data["inventory"].append(inv)
+    return delta
 
 
-def restock(inv, emp_q, quantity):
-    q = min(emp_q,
-            inv.back_stock,
-            quantity)
-    inv.increment(StockType.SHELF, q)
-    inv.decrement(StockType.BACK, q)
-    # emp_q -= q
-    # quantity -= q
-    # return emp_q, quantity
-    return q
+def mass_toss(data, emp_q):
+    delta = 0
+    while(data["quantity"] > 0 and delta != emp_q):
+        inv = data["inventory"].pop()
+
+        # toss expired on shelf
+        q = min(emp_q, inv.shelved_stock, data["quantity"])
+        inv.decremnt(StockType.SHELF, q)
+        data["quantity"] -= q
+        delta += q
+        Const.product_stats[inv.grp_id]["shelf"] -= q
+
+        # toss expired in back
+        if(data["quantity"] > 0 and delta != emp_q):
+            q = min(emp_q, inv.back_stock, data["quantity"])
+            inv.decrement(StockType.BACK, q)
+            data["quantity"] -= q
+            delta += q
+            Const.product_stats[inv.grp_id]["back"] -= q
+
+            # toss expired in pending / on truck
+            if(data["quantity"] > 0 and delta != emp_q):
+                q = min(emp_q, inv.pending_stock, data["quantity"])
+                inv.decrement(StockType.PENDING, q)
+                data["quantity"] -= q
+                delta += q
+                Const.product_stats[inv.grp_id]["pending"] -= q
+
+        if data["quantity"] > 0:
+            data["inventory"].insert(0, inv)
+        else:
+            data["inventory"].append(inv)
+    return delta
 
 
-def toss_shelf(inv, emp_q, quantity):
-    q = min(emp_q,
-            inv.shelved_stock,
-            quantity)
-    inv.decremnt(StockType.SHELF, q)
-    # emp_q -= q
-    # quantity -= q
-    # return emp_q, quantity
-    return q
+# data = {"quantity": #, "inv": [inv, inv, inv,...]}
+def mass_unload(data, emp_q):
+    delta = 0
+    while(data["quantity"] > 0 and delta != emp_q):
+        inv = data["inventory"].pop()
+        # print("\n\t\t", inv.__repr__())
+        q = min(emp_q,
+                inv.pending_stock,
+                data["quantity"])
+        inv.increment(StockType.BACK, q)
+        inv.decrement(StockType.PENDING, q)
+        data["quantity"] -= q
+        delta += q
+        if data["quantity"] > 0:
+            data["inventory"].insert(0, inv)
+        else:
+            data["inventory"].append(inv)
+        # print("\t\t--->", inv.__repr__())
+    return delta
 
 
-def toss_back(inv, emp_q, quantity):
-    q = min(emp_q,
-            inv.back_stock,
-            quantity)
-    inv.decremnt(StockType.BACK, q)
-    # emp_q -= q
-    # quantity -= q
-    # return emp_q, quantity
-    return q
-
-
-def toss_pending(inv, emp_q, quantity):
-    q = min(emp_q,
-            inv.pending_Stock,
-            quantity)
-    inv.decremnt(StockType.PENDING, q)
-    # emp_q -= q
-    # quantity -= q
-    # return emp_q, quantity
-    return q
-
-
-def manage_inventory(task, lookup, emp_q):
-    print("MANAGE INVENTORY: TASK = ", task)
-    completed = []
-    for grp_id in lookup:
-        if emp_q == 0:
-            break
-
-        if task == Const.TASK_UNLOAD:
-            lot_q = Const.products[grp_id - 1].get_lot_quantity()
-            emp_q *= lot_q
-
-        lst = lookup[grp_id]["inventory"]
-        quantity = lookup[grp_id]["quantity"]
-        if quantity == 0:
-            completed.append(grp_id)
-            continue
+# ---------------------------------------------- update all grp for a task
+def dispatch(task, lookup, emp_q):
+    keys = list(lookup.keys())
+    for grp in keys:
         t = log()
-        for inv in lst:
-            q = None
+        if emp_q == 0:
+            return
 
-            if task == Const.TASK_RESTOCK:
-                q = restock(inv, emp_q, quantity)
-                emp_q -= q
-                quantity -= q
-                if quantity == 0 or emp_q == 0:
-                    break
+        if lookup[grp]["quantity"] == 0:
+            continue
 
-            elif task == Const.TASK_TOSS:
-                # toss shelved stock
-                q = toss_shelf(inv, emp_q, quantity)
-                emp_q -= q
-                quantity -= q
-                if quantity == 0 or emp_q == 0:
-                    break
-
-                # toss back stock
-                q = toss_back(inv, emp_q, quantity)
-                emp_q -= q
-                quantity -= q
-                if quantity == 0 or emp_q == 0:
-                    break
-
-                # toss pending stock
-                q = toss_pending(inv, emp_q, quantity)
-                emp_q -= q
-                quantity -= q
-                if quantity == 0 or emp_q == 0:
-                    break
-
-                # NOTE: check if empty inv --> mark IS_DELETED
-            elif task == Const.TASK_UNLOAD:
-                q = unload(inv, emp_q, quantity)
-                emp_q -= q
-                quantity -= q
-                if quantity == 0 or emp_q == 0:
-                    break
-            else:
-                print("ERROR -- INVALID TASK")
-                exit(3)
-
-            # TODO: mark inv as is_deleted if necc
-
-        lookup[grp_id]["quantity"] = quantity
-        delta("\t\t\tone grp", t)
         if task == Const.TASK_UNLOAD:
-            lot_q = Const.products[grp_id - 1].get_lot_quantity()
-            emp_q = int(emp_q / lot_q)
+            print("\tunloading grp ", grp)
+            prod = Const.products[grp - 1]
+            # emp_q --> # of lots an emp can unload
+            emp_q = emp_q * prod.get_lot_quantity()
+            diff = mass_unload(lookup[grp], emp_q)
 
-        if quantity > 0 and len(lst) == 0:
-            print("quantity = ", quantity, ", len(lst) = ", len(lst))
-            print('ERROR: Inventory.inventory_manage() --> quantity>0 but no inventory available')
-            exit(2)
+            Const.product_stats[grp - 1]["pending"] -= diff
+            Const.product_stats[grp - 1]["back"] += diff
+            emp_q -= diff
+            emp_q = int(emp_q / prod.get_lot_quantity())
+        elif task == Const.TASK_RESTOCK:
+            diff = mass_restock(lookup[grp], emp_q)
+            Const.product_stats[grp - 1]["back"] -= diff
+            Const.product_stats[grp - 1]["shelf"] += diff
+            emp_q -= diff
+        else:
+            assert(task == Const.TASK_TOSS)
+            # print("\ttossing grp ", grp)
+            diff = mass_toss(lookup[grp], emp_q)
+            emp_q -= diff
 
-    return emp_q, completed
+        delta("\t\t\tdispatch one grp", t)
 
 
-# returns a list of tuples in the format (grp, quantity, action)
-def toss_list(session=None):
+# ---------------------------------------------- pull task lists
+# returns a dictionary of grp: {quantity, inv_lst}
+# toss inventory w/sell_by date > today
+def toss_list(inv_lookup):
     today = date(CLOCK.year, CLOCK.month, CLOCK.day)
-    t = log()
-    qualified_inv = session.query(ModelInventory)\
-        .filter(ModelInventory.sell_by < today)\
-        .order_by(ModelInventory.grp_id).all()
-    delta("\t\t\t-qualifed inventory", t)
-
-    t = log()
     lookup = {}
-    for inv in qualified_inv:
-        if inv.grp_id not in lookup:
-            lookup[inv.grp_id] = {"quantity": 0,
-                                  "inventory": []}
-        lookup[inv.grp_id]["inventory"].append(inv)
-        q = inv.shelved_stock + inv.back_stock + inv.pending_stock
-        lookup[inv.grp_id]["quantity"] += q
-    delta("\t\t\t-create lookup", t)
-
+    for grp_id in inv_lookup:
+        inv_lst = [inv for inv in inv_lookup[grp_id]
+                   if inv.deleted is False
+                   and inv.sell_by < today]
+        quantity_reduce = (lambda x: x.shelved_stock
+                           + x.back_stock + x.pending_stock)
+        quantity = functools.reduce(quantity_reduce, inv_lst, 0)
+        if quantity != 0:
+            lookup[grp_id] = {"quantity": quantity, "inventory": inv_lst}
     return lookup
 
 
-# returns a list of tuples in the format (grp, quantity, action)
-def restock_list(session=None):
-    # pull all inventory for products with sum(shelf) < restock_threshold
-    t = log()
-    all_qualified_products = session.query(
-        ModelInventory.grp_id,
-        func.sum(ModelInventory.shelved_stock),
-        func.sum(ModelInventory.back_stock))\
-        .group_by(ModelInventory.grp_id)\
-        .order_by(ModelInventory.grp_id).all()
-    assert(all_qualified_products is not None)
-    delta("\t\t\t-qualified products", t)
-
-    t = log()
-    qualified_inventory = session.query(ModelInventory)\
-        .filter(ModelInventory.back_stock > 0)\
-        .order_by(ModelInventory.grp_id,
-                  ModelInventory.sell_by,
-                  ModelInventory.shelved_stock).all()
-    assert(qualified_inventory is not None)
-    delta("\t\t\t-qualified inventory", t)
-
-    t = log()
-    prod_lst = {}
-    for item in all_qualified_products:
-        if item[1] < Const.products[item[0] - 1].get_restock_threshold():
-            # prod_lst[grp_id] = [sum(curr_shelf), min(max_shelf - curr_shelf, curr_back)]
-            prod_lst[item[0]] = [item[1], min(item[2], Const.products[item[0] - 1]
-                                 .get_max_shelved_stock() - item[1])]
-    delta("\t\t\t-prod_lst dictionary", t)
-
-    t = log()
+# returns a dictionary of grp: {quantity, inv_lst}
+# restock all inv where total shelf_stock < restock_threshold
+# until shelf filled or back stock is used up
+def restock_list(inv_lookup):
     lookup = {}
-    for inv in qualified_inventory:
-        if inv.grp_id in prod_lst:
-            if inv.grp_id not in lookup:
-                lookup[inv.grp_id] = {"quantity": prod_lst[inv.grp_id][1],
-                                      "inventory": []}
+    for grp_id in inv_lookup:
+        prod = Const.products[grp_id - 1]
+        curr_shelf = Const.product_stats[grp_id-1]["shelf"]
+        curr_back = Const.product_stats[grp_id-1]["back"]
 
-            if(inv.shelved_stock
-               < Const.products[inv.grp_id - 1].get_max_shelved_stock()):
-                lookup[inv.grp_id]["inventory"].append(inv)
-    delta("\t\t\t-lookup dictionary", t)
+        if curr_shelf < prod.get_restock_threshold():
+            inv_lst = [inv for inv in inv_lookup[grp_id]
+                       if inv.deleted is False
+                       and inv.back_stock > 0]
+            inv_lst.sort(key=lambda x: x.sell_by)
+            assert(len(inv_lst) > 0), "restock_list(): no inventory"
+            quantity = min(prod.get_max_shelved_stock() - curr_shelf,
+                           curr_back)
+            lookup[grp_id] = {"quantity": quantity, "inventory": inv_lst}
+
     return lookup
 
+    # >>>>> NEXT:
+    # 2. inv_lst is None in Shopper.step() line 156
+    # 3. make max # of shoppers at start of program:
+    #   > reset at start of day
+    #   > release x shopper at each hour
+    #   > add attribute for released or not
 
-# returns a list of tuples in the format (grp, quantity, action)
-def unload_list(session=None):
+
+# returns a dictionary of grp: {quantity, inv_lst}
+# where inv is available today, pending_stock > 0 
+# sorted by sell_by
+def unload_list(inv_lookup):
     today = date(CLOCK.year, CLOCK.month, CLOCK.day)
-    t = log()
-    qualified_inv = session.query(ModelInventory)\
-        .filter(ModelInventory.available == today)\
-        .filter(ModelInventory.pending_stock > 0)\
-        .order_by(ModelInventory.grp_id)\
-        .order_by(ModelInventory.sell_by).all()
-    delta("\t\t\t-qualified inventory", t)
-
-    t = log()
     lookup = {}
-    for inv in qualified_inv:
-        if inv.grp_id not in lookup:
-            lookup[inv.grp_id] = {"quantity": 0,
-                                  "inventory": []}
-        lookup[inv.grp_id]["inventory"].append(inv)
-        lookup[inv.grp_id]["quantity"] += inv.pending_stock
-    delta("\t\t\t-create lookup", t)
-
-    # inv_lst = lookup[1]["inventory"]
-    # for inv in inv_lst:
-    #     inv.print()
-
+    for grp_id in inv_lookup:
+        inv_lst = [inv for inv in inv_lookup[grp_id]
+                   if inv.deleted is False
+                   and inv.available == today
+                   and inv.pending_stock > 0]
+        total_pending = sum(inv.pending_stock for inv in inv_lst)
+        if total_pending > 0:
+            lookup[grp_id] = {"quantity": total_pending, "inventory": inv_lst}
+            print("GRP_{}: pending={}".format(grp_id, total_pending))
     return lookup
 
 
 @provide_session
-def print_stock_status(session=None):
-    print("\t--- STOCK ---")
-    products = session.query(ModelProduct).all()
-    for prod in products:
-        counts = session.query(
-                func.sum(ModelInventory.shelved_stock),
-                func.sum(ModelInventory.back_stock))\
-            .filter(ModelInventory.grp_id == prod.grp_id).all()[0]
+def print_stock_status(session):
+    print("\n\t--- STOCK ---")
+    stats = session.query(
+        ModelInventory.grp_id,
+        func.sum(ModelInventory.shelved_stock),
+        func.sum(ModelInventory.back_stock))\
+        .filter(ModelInventory.deleted == False)\
+        .group_by(ModelInventory.grp_id).all()
+    assert(stats is not None)
+    for row in stats:
         print("GRP_{}: shelf={}, back={}"
-              .format(prod.grp_id, counts[0], counts[1]))
+              .format(row[0], row[1], row[2]))

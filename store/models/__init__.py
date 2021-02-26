@@ -1,7 +1,7 @@
 # MODELS EXPORTED FUNCTIONS
 from models.Base import Base, provide_session, Session
 from models import Constants as Const
-from models.Constants import Shift, Day, log, delta
+from models.Constants import Shift, Day, log, delta, StoreStatus
 
 from models.Cost import ModelCost
 from models.Some_models import ModelRevenue, ModelQtime

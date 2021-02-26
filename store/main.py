@@ -1,212 +1,172 @@
 from datetime import timedelta
+from sqlalchemy.sql.expression import false
 from sqlalchemy import func
-from models import Shopper, Lane, Employee, Inventory, Const, Product
+from models import Shopper, Lane, Employee, Inventory, Const, Product, Cart
 from models import (ModelShopper,
                     ModelEmployee,
                     ModelProduct,
                     ModelInventory,
                     ModelCategory,
+                    ModelCart,
                     SingleLane,
                     Status,
                     Action,
                     Shift,
                     Day)
 from models.Base import provide_session, Session
-from models import log, delta
+from models import log, delta, StoreStatus, Day
 import random
+from math import floor
+import beepy
 
 
 # steps for now, later it will be the constant # of minutes in a day
 @provide_session
 def simulate_day(day, lanes, session=None):
-    steps = 840  # 14 hour day
     open_lanes = Const.MIN_LANES
     Const.CURRENT_SHIFT = Shift.MORNING
-    t = log()
-    Employee.set_day_schedule(day, session)
-    delta("\tset_day_schedule()", t)
 
+    employee_group = Employee.pull_employees(session)
     for i, ln in enumerate(lanes):
         if i < Const.MIN_LANES:
-            ln.open()
+            ln.open(employee_group)
 
-    for t_step in range(steps):
+    # pull inventory
+    t = log()
+    inv_lookup = Inventory.pull_inventory(session)
+    delta("\tInventory.pull_inventory", t, 0)
+
+    for t_step in range(Const.day_steps):
+
         step_start = log()
         print("------------------------------------------------------------------------------------------------------------------------------------------ {:02}:{:02}"\
               .format(Const.CLOCK.hour, Const.CLOCK.minute))
-        if Const.OPEN and t_step % 60 == 0:
+        if (t_step >= StoreStatus.OPEN
+                and t_step < StoreStatus.CLOSED
+                and t_step % 60 == 0):
             print("creating shoppers...")
             t = log()
-            # TODO: num_shoppers = random func in const
-            Shopper.create(300, session)
+            Shopper.create(Const.SHOPPER_ADD, session)
             session.commit()
-            delta("\tcreate 300 shoppers", t)
+            delta("\tcreate {} shoppers".format(Const.SHOPPER_ADD), t, t_step)
 
-        # -------------------------------------------------- advance shoppers
-        shopper_group = session.query(ModelShopper).all()
-
-        # Pull all products and inventory for shoppers
-        # selecting a grp this minute
-        n = 0
-        for s in shopper_group:
-            if s.browse_mins == 1:
-                n += 1
-        print("{} SHOPPERS SELECTING...".format(n))
-        prod_lst, inv_lookup = [], {}
-        if n != 0:
-            print("selecting grp now...")
-            prod_lst = Product.select_grp(n)
-            # for p in prod_lst:
-            #     print("\t prod = ", p)
-            print("{} products selected".format(len(prod_lst)))
-            print("pulling inv now...")
-            t = log()
-            inv_lookup = Inventory.pull_inventory(n, session)
-            delta("\tInventory.pull_inventory", t)
-            assert(len(inv_lookup) == Const.PRODUCT_COUNT)
+        # ------------------------------------------------------------------- advance shoppers
+        # pull shoppers
+        shopper_group = session.query(ModelShopper)\
+            .filter(ModelShopper.deleted == False).all()
 
         if shopper_group:
             print("advancing shoppers...")
             shopper_advance = log()
             for sh in shopper_group:
                 # t = log()
-                stat = sh.step(prod_lst, inv_lookup, session)
-                # delta("\t\tShopper.step(status={})".format(stat), t)
-                if (stat is Status.QUEUE_READY or stat is Status.QUEUEING
-                        or stat is Status.DONE):
+                stat = sh.step(t_step, inv_lookup, session)
+                # delta("\t\tShopper.step(status={})".format(stat), t, t_step)
+                if stat is Status.QUEUE_READY:
+                    # t = log()
+                    lid = Lane.queue_shopper(sh.id, lanes, open_lanes)
+                    # delta("\t\t\tLane.queue_shopper())", t, t_step)
+                    sh.set_lane(lid)
+                    sh.set_status(Status.QUEUEING)
+                elif stat is Status.QUEUEING:
+                    sh.increment_qtime(session)
 
-                    if stat is Status.QUEUE_READY:
-                        # print("\t\tqueueing shopper...")
-                        lid = Lane.queue_shopper(sh.id, lanes, open_lanes)
-                        sh.set_lane(lid)
-                        sh.set_status(Status.QUEUEING)
-                    elif stat is Status.QUEUEING:
-                        sh.increment_qtime(session)
-                    elif stat is Status.DONE:
-                        pass
-                        # FIXME: no deletes --> IS_DELETED column
+            delta("\tadvancing shoppers", shopper_advance, t_step)
+
+        # ------------------------------------------------------------------- prepare employees
+        # prepare employees to work lanes and inventory jobs
+        t = log()
+        employee_group = Employee.pull_employees(session)
+        delta("Employee.pull_employees()", t, t_step)
+        if t_step == StoreStatus.SHIFT_CHANGE:
+            print("SHIFT CHANGE")
+            Const.CURRENT_SHIFT = Shift.EVENING
             t = log()
-            session.commit()
-            delta("\tcommiting shopper steps", t)
-            delta("\tadvancing {} shoppers".format(len(shopper_group)), shopper_advance)
+            Employee.shift_change(employee_group)
+            delta("\t\tEmployee.shift_change()", t, t_step)
+            t = log()
+            Lane.shift_change(lanes, employee_group)
+            delta("\t\tLane.shift_change()", t, t_step)
 
-        # -------------------------------------------------- advance lanes
+        # ------------------------------------------------------------------- advance lanes
         # lanes are open for store hours and post-close lingering shoppers
-        if Const.OPEN or shopper_group:
-            t = log()
-            open_lanes = Lane.manage(lanes, open_lanes, session)  # expand & open -OR- collapse
-            delta("\t\tLane.manage()", t)
-            if Const.shift_change():
-                print("shift change!")
-                Lane.shift_change(open_lanes, session)
+        if ((t_step >= StoreStatus.OPEN
+                and t_step < StoreStatus.CLOSED)
+                or shopper_group):
 
-            # finish closing out lanes that were checking out shoppers when closed
+            # collect carts and manage lanes
+            t = log()
+            carts, sid_list = Lane.get_carts_sids(lanes, session)
+            delta("\t\tLane.get_carts_sids()", t, t_step)
+            t = log()
+            open_lanes = Lane.manage(lanes, open_lanes, employee_group, carts)
+            delta("\t\tLane.manage()", t, t_step)
+
+            # collect queued shoppers
+            queued_shoppers = {}
+            for sh in shopper_group:
+                if sh.id not in sid_list:
+                    continue
+                queued_shoppers[sh.id] = sh
+
+            # advance lanes
             lane_advance = log()
             for ln in lanes:
                 # t = log()
-                ln.step(session)
-                # delta("\t\tLane.step()", t)
-            delta("\tadvancing all lanes", lane_advance)
+                ln.step(open_lanes, queued_shoppers, carts, employee_group)
+                # delta("\t\tLane.step()", t, t_step)
+            # session.commit()
+            delta("\tadvancing all lanes", lane_advance, t_step)
 
-        # -------------------------------------------------- advance employees
-        # collect tasks
-        task_collection = log()
+        # ------------------------------------------------------------------- advance employees
+
         print("\ncollecting tasks...")
-
-        t = log()
-        unload_lookup = Inventory.unload_list(session)
-        delta("\t\tInventory.unload_list()", t)
-
-        t = log()
-        toss_lookup = Inventory.toss_list(session)
-        delta("\t\tInventory.toss_list()", t)
-
-        t = log()
-        restock_lookup = Inventory.restock_list(session)
-        delta("\t\tInventory.restock_list()", t)
-
-        delta("\tcollecting tasks", task_collection)
-
-        # order tasks lists by priority
-        print("ordering task lists...")
-        todo = []
-        if Const.BEFORE:
-            todo = [{"type": Const.TASK_UNLOAD,
-                     "lookup": unload_lookup},
-                    {"type": Const.TASK_RESTOCK,
-                     "lookup": restock_lookup},
-                    {"type": Const.TASK_TOSS,
-                     "lookup": toss_lookup}]
-        elif Const.OPEN:
-            todo = [{"type": Const.TASK_RESTOCK,
-                     "lookup": restock_lookup},
-                    {"type": Const.TASK_TOSS,
-                     "lookup": toss_lookup},
-                    {"type": Const.TASK_UNLOAD,
-                     "lookup": unload_lookup}]
+        task_collection = log()
+        todo = None
+        if t_step < StoreStatus.OPEN:
+            t = log()
+            unload_lookup = Inventory.unload_list(inv_lookup)
+            delta("\t\tInventory.unload_list()", t, t_step)
+            todo = {"type": Const.TASK_UNLOAD, "lookup": unload_lookup}
+        elif t_step >= StoreStatus.CLOSED:
+            t = log()
+            toss_lookup = Inventory.toss_list(inv_lookup)
+            delta("\t\tInventory.toss_list()", t, t_step)
+            todo = {"type": Const.TASK_TOSS, "lookup": toss_lookup}
         else:
-            todo = [{"type": Const.TASK_TOSS,
-                     "lookup": toss_lookup},
-                    {"type": Const.TASK_RESTOCK,
-                     "lookup": restock_lookup},
-                    {"type": Const.TASK_UNLOAD,
-                     "lookup": unload_lookup}]
+            assert(t_step >= StoreStatus.OPEN
+                   and t_step < StoreStatus.CLOSED)
+            t = log()
+            restock_lookup = Inventory.restock_list(inv_lookup)
+            delta("\t\tInventory.restock_list()", t, t_step)
+            todo = {"type": Const.TASK_RESTOCK, "lookup": restock_lookup}
 
-        print("collecting employees...")
-        employee_advance = log()
-        group = session.query(ModelEmployee)\
-            .filter(ModelEmployee.action != Action.CASHIER).all()
-        emp_count = len(group)
-        assert(emp_count > 0)
+        delta("\tcollecting tasks...task_type = {}"
+              .format(todo["type"]), task_collection, t_step)
 
-        todo_index = 0
-        # loop through employees
-        for emp in group:
-            while(todo_index < len(todo) and bool(todo[todo_index]["lookup"]) is False):
-                todo_index += 1
-
-            if todo_index >= len(todo):
-                break
-
-            task = todo[todo_index]["type"]
-            print("Task type: ", task)
-            lookup = todo[todo_index]["lookup"]
-            emp_q = emp.get_speed(task)
-            print("Advancing employee {} with speed {}".format(emp.id, emp_q))
-
-            i = 0
-            # loop through tasks in lookup
-            while(emp_q != 0):
-                i += 1
-                if i == 50:
-                    exit(1)
-
-                # do task
+        print("~lookup:")
+        for key in todo['lookup']:
+            print(key, todo['lookup'][key]['quantity'])
+        if bool(todo["lookup"]) is not False:
+            employee_advance = log()
+            # loop through employees
+            for eid in employee_group["available"]:
+                emp = employee_group["available"][eid]
+                if emp.action == Action.CASHIER:
+                    continue
+                emp_q = emp.get_speed(todo["type"])
                 t = log()
-                emp_q, completed = Inventory.manage_inventory(task, lookup, emp_q)
-                delta("\t\t\tInventory.manage_inventory()", t)
-                # print("completed: ", completed)
-
-                # update lookup
-                for grp_id in completed:
-                    del lookup[grp_id]
-
-                if bool(todo[todo_index]["lookup"]) is False:
-                    break
-
-            # move on to next todo
-            if bool(todo[todo_index]["lookup"]) is False:
-                todo_index += 1
-                if todo_index > len(todo):
-                    break
-        delta("\tadvance all employees", employee_advance)
-
-        # -------------------------------------------------- print object statuses
+                Inventory.dispatch(todo["type"], todo["lookup"], emp_q)
+                delta("\t\t\tInventory.dispatch()", t, t_step)
+            delta("\tadvance all employees", employee_advance, t_step)
+        session.commit()
+        # ------------------------------------------------------------------- print status
+        delta("\tSIMULATION_STEP()", step_start)
+        print("\n***************************** STATUS [{:02}:{:02}] ***************************************"\
+              .format(Const.CLOCK.hour, Const.CLOCK.minute))
         Const.CLOCK += timedelta(minutes=1)
-        delta("\tSIMULATION_STEP(steps={})".format(t_step), step_start)
-        print("\n***************************** STATUS ***************************************")
-        Shopper.print_active_shoppers(session)
-        print("\n")
+        # Shopper.print_active_shoppers(session)
+        # print("\n")
         # Employee.print_active_employees(session)
         # print("\n")
         Lane.print_active_lanes(lanes)
@@ -219,17 +179,12 @@ def simulate_day(day, lanes, session=None):
 @provide_session
 def setup_lanes_and_employees(lanes, session=None):
     # create & schedule employees
-    t = log("\tcreate {} employees:".format(Const.NUM_EMPLOYEES))
-    for i in range(Const.NUM_EMPLOYEES):
-        Employee.create_employee(session)
+    t = log()
+    Employee.create_employees(Const.NUM_EMPLOYEES, session)
     delta("\tcreate {} employees:".format(Const.NUM_EMPLOYEES), t)
 
-    t = log("\tmake_week_schedule()")
-    Employee.make_week_schedule(session)
-    delta("\tmake_week_schedule()", t)
-
     # create and open minimum lanes
-    t = log("\tcreate {} lanes:".format(Const.MAX_LANES))
+    t = log()
     for i in range(Const.MAX_LANES):
         ln = SingleLane(i)
         lanes.append(ln)
@@ -239,6 +194,7 @@ def setup_lanes_and_employees(lanes, session=None):
 
 @provide_session
 def pull_data(session=None):
+    # initialize Const.categories
     cats = session.query(ModelCategory)\
         .order_by(ModelCategory.id).all()
     lst = []
@@ -246,30 +202,78 @@ def pull_data(session=None):
         lst.append(c)
     Const.categories = lst
 
+    # initialize Const.products
     prods = session.query(ModelProduct)\
         .order_by(ModelProduct.grp_id).all()
     lst = []
-    for p in prods:
+    for index, p in enumerate(prods):
         lst.append(p)
     Const.products = lst
 
+    # initialize Const.product_stats
+    all_inventory = session.query(ModelInventory).all()
+    for prod in Const.products:
+        inv_lst = [inv for inv in all_inventory
+                   if inv.deleted is False
+                   and inv.grp_id == prod.grp_id]
+        shelf = sum(inv.shelved_stock for inv in inv_lst)
+        back = sum(inv.back_stock for inv in inv_lst)
+        pending = sum(inv.pending_stock for inv in inv_lst)
+        Const.product_stats[prod.grp_id - 1] = {"shelf": shelf,
+                                            "back": back,
+                                            "pending": pending}
 
-def run():
-    pull_data()
+def simulate(session):
+    pull_data(session)
     random.seed(0)
     lanes = []
-    t = log()
-    setup_lanes_and_employees(lanes)
-    delta("setup_lanes_and_employees()", t)
     Inventory.print_stock_status()
+
+    # setup employees
+    schedule = [Shift.OFF, Shift.MORNING, Shift.MORNING,
+                Shift.MORNING, Shift.EVENING, Shift.EVENING, Shift.EVENING]
     t = log()
+    setup_lanes_and_employees(lanes, session)
+    delta("setup_lanes_and_employees()", t)
 
-    simulate_day(Day.SUNDAY, lanes)
-    delta("simulate_day()", t)
+    # simulate year
+    curr_month = Const.CLOCK.month
+    curr_year = Const.CLOCK.year
+    for i in range(52):
+        for day in Const.days:
+            # set employee schedule
+            t = log()
+            Employee.set_day_schedule(schedule, session)
+            delta("\tset_day_schedule()", t)
+            t = log()
+            simulate_day(day, lanes)
+            delta("simulate_day()", t)
+            Const.print_tracking()
+            beepy.beep(sound=2)
 
-    # for i in range(Const.NUM_DAYS):
-    #    # simulate_day(lanes, open_lanes)
+            # update master schedule
+            shift = schedule.pop()
+            schedule.append(shift)
+
+            # update clock for next day
+            Const.CLOCK += timedelta(days=1)
+            Const.CLOCK = Const.CLOCK.replace(hour=10, minute=0)
+            print("\n\nA successful day! :)")
+            exit(0)
+
+        # order inventory
+        print("Weekly order inventory")
+        Inventory.order_inventory(session)
+
+        if Const.CLOCK.month != curr_month:
+            # TODO: monthly stats collection
+            curr_month = Const.CLOCK.month
+        if Const.CLOCK.year != curr_year:
+            # TODO: yearly stats collection
+            curr_year = Const.CLOCK.year
+    # TODO: print stats to report
 
 
 if __name__ == '__main__':
-    run()
+    session = Session()
+    simulate(session)
