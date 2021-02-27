@@ -24,7 +24,7 @@ while true; do
 	if [ "$COMMAND" == "r" ];then
         # python store/test_session.py
         echo "" > logfile
-        python store/main.py 2> logfile
+        python store/main.py
         # python store/prog.py                                        # RELATIVE PATH
         psql -c "DROP DATABASE store;"
         psql -c "CREATE DATABASE store;"

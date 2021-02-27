@@ -1,4 +1,5 @@
 # MODELS EXPORTED FUNCTIONS
+import beepy
 from models.Base import Base, provide_session, Session
 from models import Constants as Const
 from models.Constants import Shift, Day, log, delta, StoreStatus

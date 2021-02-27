@@ -17,7 +17,8 @@ from models.Base import provide_session, Session
 from models import log, delta, StoreStatus, Day
 import random
 from math import floor
-import beepy
+from models import beepy
+import os
 
 
 # steps for now, later it will be the constant # of minutes in a day
@@ -52,24 +53,33 @@ def simulate_day(day, lanes, session=None):
 
         # ------------------------------------------------------------------- advance shoppers
         # pull shoppers
+        t = log()
         shopper_group = session.query(ModelShopper)\
             .filter(ModelShopper.deleted == False).all()
+        delta("query shopper group", t)
 
         if shopper_group:
             print("advancing shoppers...")
             shopper_advance = log()
-            for sh in shopper_group:
-                # t = log()
+            for index, sh in enumerate(shopper_group):
+                t = log()
                 stat = sh.step(t_step, inv_lookup, session)
-                # delta("\t\tShopper.step(status={})".format(stat), t, t_step)
+                delta("\t\tShopper.step(status={})".format(stat), t, t_step)
+
                 if stat is Status.QUEUE_READY:
-                    # t = log()
+                    t = log()
                     lid = Lane.queue_shopper(sh.id, lanes, open_lanes)
-                    # delta("\t\t\tLane.queue_shopper())", t, t_step)
+                    delta("\t\t\tLane.queue_shopper())", t, t_step)
+
                     sh.set_lane(lid)
                     sh.set_status(Status.QUEUEING)
                 elif stat is Status.QUEUEING:
                     sh.increment_qtime(session)
+
+                if index % 300 == 0:
+                    t = log()
+                    session.flush()
+                    delta("\t\tflush 300 shopper updates", t)
 
             delta("\tadvancing shoppers", shopper_advance, t_step)
 
@@ -78,12 +88,15 @@ def simulate_day(day, lanes, session=None):
         t = log()
         employee_group = Employee.pull_employees(session)
         delta("Employee.pull_employees()", t, t_step)
+
         if t_step == StoreStatus.SHIFT_CHANGE:
             print("SHIFT CHANGE")
             Const.CURRENT_SHIFT = Shift.EVENING
+
             t = log()
             Employee.shift_change(employee_group)
             delta("\t\tEmployee.shift_change()", t, t_step)
+
             t = log()
             Lane.shift_change(lanes, employee_group)
             delta("\t\tLane.shift_change()", t, t_step)
@@ -98,6 +111,7 @@ def simulate_day(day, lanes, session=None):
             t = log()
             carts, sid_list = Lane.get_carts_sids(lanes, session)
             delta("\t\tLane.get_carts_sids()", t, t_step)
+
             t = log()
             open_lanes = Lane.manage(lanes, open_lanes, employee_group, carts)
             delta("\t\tLane.manage()", t, t_step)
@@ -112,11 +126,14 @@ def simulate_day(day, lanes, session=None):
             # advance lanes
             lane_advance = log()
             for ln in lanes:
-                # t = log()
+                t = log()
                 ln.step(open_lanes, queued_shoppers, carts, employee_group)
-                # delta("\t\tLane.step()", t, t_step)
-            # session.commit()
+                delta("\t\tLane.step()", t, t_step)
             delta("\tadvancing all lanes", lane_advance, t_step)
+
+            t = log()
+            session.flush()
+            delta("\t\tflush lanes & shoppers", t)
 
         # ------------------------------------------------------------------- advance employees
 
@@ -158,8 +175,14 @@ def simulate_day(day, lanes, session=None):
                 t = log()
                 Inventory.dispatch(todo["type"], todo["lookup"], emp_q)
                 delta("\t\t\tInventory.dispatch()", t, t_step)
+            t = log()
+            session.flush()
+            delta("\t\tflush employee tasks -- inv updates", t)
             delta("\tadvance all employees", employee_advance, t_step)
+
+        t = log()
         session.commit()
+        delta("\tCommitting all day_simulation changes", t)
         # ------------------------------------------------------------------- print status
         delta("\tSIMULATION_STEP()", step_start)
         print("\n***************************** STATUS [{:02}:{:02}] ***************************************"\
@@ -220,8 +243,9 @@ def pull_data(session=None):
         back = sum(inv.back_stock for inv in inv_lst)
         pending = sum(inv.pending_stock for inv in inv_lst)
         Const.product_stats[prod.grp_id - 1] = {"shelf": shelf,
-                                            "back": back,
-                                            "pending": pending}
+                                                "back": back,
+                                                "pending": pending}
+
 
 def simulate(session):
     pull_data(session)
@@ -249,7 +273,7 @@ def simulate(session):
             simulate_day(day, lanes)
             delta("simulate_day()", t)
             Const.print_tracking()
-            beepy.beep(sound=2)
+            beepy.beep(sound=5)
 
             # update master schedule
             shift = schedule.pop()

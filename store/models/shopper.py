@@ -1,7 +1,7 @@
 from sqlalchemy import func
 from sqlalchemy.sql.sqltypes import Boolean
 from sqlalchemy.sql.expression import false
-from models import ModelInventory
+from models import ModelInventory, beepy
 from models.Base import check_session, check_object_status
 from models.Cart import ModelCart
 from models.Product import ModelProduct, ModelCategory
@@ -151,20 +151,31 @@ class ModelShopper(Base):
             # select grp or keep browsing
             else:
                 if self.browse_mins == 1:
+                    shopper_select = log()
                     grp_id = random.randint(1, Const.PRODUCT_COUNT)
                     assert(grp_id in inv_lookup)
-                    inv_lst = inv_lookup[grp_id]
-                    # inv_lst = [inv for inv in inv_lookup[grp_id] if inv.deleted is False]
-                    inv_lst.sort(key=lambda x: (x.deleted, x.sell_by, x.shelved_stock))
+                    t = log()
+                    inv_lst = [inv for inv in inv_lookup[grp_id]
+                               if inv.deleted is False
+                               and inv.shelved_stock > 0]
+                    delta("shopper select inv, list comprehension", t)
+
+                    t = log()
+                    inv_lst.sort(key=lambda x: x.sell_by)
+                    delta("\t\t\t\tsort inv_lst", t)
+
                     while(inv_lst[0].shelved_stock == 0):
                         inv_lst[0].print()
                         grp_id = random.randint(1, Const.PRODUCT_COUNT)
                         inv_lst = inv_lookup[grp_id]
+                        beepy.beep(sound=3)
                         exit(0)
                     assert(inv_lst[0].shelved_stock != 0), "grp {} has no shelf stock".format(grp_id)
                     inv = inv_lst[0]
                     prev_shelf = inv.shelved_stock
+                    t = log()
                     Cart.add_inv_item(self.id, inv, session)
+                    delta("\t\t\tCart.add_inv_item()", t)
                     assert(inv.shelved_stock == prev_shelf - 1)
 
                     # other shoper updates
@@ -173,6 +184,7 @@ class ModelShopper(Base):
                     self.total += Const.products[grp_id - 1].get_price()
                     self.reset_browse(t_step)
                     Const.product_stats[grp_id - 1]["shelf"] -= 1
+                    delta("\t\t\tShopper select for status=1", shopper_select)
                 else:
                     self.browse_mins -= 1
 
@@ -185,6 +197,7 @@ class ModelShopper(Base):
             session.add(qt)
         else:
             pass
+        # session.flush()
         return self.status
 
 

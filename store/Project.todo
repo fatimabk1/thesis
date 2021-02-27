@@ -115,43 +115,39 @@
     - Inventory.pull_inventory @done
         - Pull all inv + make list of qualified via programming in functions @done
         - qualified_inventory, db query @done
-    - Pull inventory once at start of day
-    - Optomize Lane.get_carts_sids()
-
-
-    - Advancing all shoppers / 1.3646
-        - O(n) breakdown
-    - qualified inventory --> Inventory.pull_inventory()  / 0.4326 @done
-    - create 300 shoppers / 0.484
-    - Lane.get_carts_sids()  / 0.259
-        - "-qualified inventory, db query" 
-    - Employee.pull_employees() / 0.155
-    - Shopper.step() / 0.0461
-    - Inventory.toss_list() / 0.03
-    - Rework order() and order_inventory() for improved runtime
-
-    - restock(): qualified inventory, db query / 0.123 min; 0.899 max; avg ~ 0.3
-    - unload()?: qualified inventory db / 0.281 min; 1.364 max; avg ~ 0.6
-    - restock(): qualified inventory sort / 0.045 min; 0.259 max; avg ~ 0.06
-    - Inventory.restock_list() / 0.408 min; 1.589 max; avg ! 0.8
-    - Inventory.toss_list() / 0.005 min; 0.043 max
-    - Inventory.unload_list() / 0.004 min; 0.008 max
-    - Lane.get_carts_sids() / 0.000 min; 0.361
-    - Lane.manage() / 0.000 min; 0.034 max; avg ~ 0.000
-    - Lane.step() / 0.000 min; 0.028 max
-    - Shopper.step() / 0.000 min; 0.010 max; avg ~ 0.00
-    - Inventory.pull_inventory / 0.146 min; 0.947 max; avg ~ 0.33
-    - Product.select_grp() / 0.000 min; 0.008 max
-    - SIMULATION_STEP() / 0.014 min; 3.577 max 
-    - advancing all lanes / 0.000 min; 0.038 max
-    - collecting tasks...task type = 0 / 0.004 min; 0.008 max
-    - collecting tasks...task type = 1 / 0.408 min; 1.589 max; avg ~ 0.8
-    - collecting tasks...task type = 2 / 0.005 min; 0.043 max
-    - create 300 shoppers / 0.122 min; 0.393 max
-        - create all at start of program + reset all shoppers at start of day
-    - Employee.pull_employees() / 0.002 min; 0.043 max
-    - setup_lanes_and_employees() / 0.071
-    - simulate_day() / 16:29
+    - POA:
+        - make list of areas to reduce time
+        - setup stats print in new files each run @done
+        - tackle list in order
+    - Tackle List:
+        - Optomize 
+            - 
+        - Play around w/flush & commit frequency
+            - day_simulation commits // 4 sec
+            - flush lanes & shoppers // 56 sec
+            - flush 10 shopper updates // 07:50
+        - Lanes:
+            - Lane.get_carts_sids() // 01:27
+                - query carts once per minute?  // 01:14
+                - make carts a part of shopper objects
+                    - no query required, just list comprehension
+            - flush lanes & shoppers // 56 sec
+            - lane.step() sum // 00:01
+            - advancing lanes // 01:01
+        - Shoppers:
+            - shopper.step(status=1) // 01:42
+                - Shopper select (status = 1) // 01:29
+                    - sort inv_list (selecting grp & inv) // 01:04
+                    - Cart.add_inv_item() // 11 sec
+            - flush 10 shopper updates // 07:50
+            - advancing shoppers // 12:43
+        - Inventory:
+            - toss_list() // 5.5 sec
+        - Simulation step // 15:49:98 mins (flush every 10 shopper.step())
+        - Do once
+            - Create shoppers at start of program + reset each day // 4 sec
+            - Pull shopper group once at program start // 10 sec
+            - Pull employee group once at program start // 6 sec
     - Rework lane open and close: don't query for employee each time via request and return @done
         - instead, pass a list of employees to Lane.step(employees[]) and pop or append @done
     - Rework lane scanning, get_cart_size, etc. @done

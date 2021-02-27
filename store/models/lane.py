@@ -7,8 +7,8 @@ from sqlalchemy.sql.expression import false
 import sys
 
 from models.Base import provide_session
-from models import Status, ModelShopper, Action
-from models import Const, Cart, Shopper, Employee
+from models import Status, log, delta
+from models import Const, Cart
 # from constants import (MIN_LANES, MAX_LANES, QTIME_MIN, QTIME_RANGE,
 # QTIME_IDEAL, CHECKOUT_MIN, CHECKOUT_MAX, Status)
 
@@ -178,10 +178,21 @@ def shift_change(lanes, employees):
 
 
 def get_carts_sids(lanes, session):
+    t = log()
     sid_list = [sid for ln in lanes for sid in ln.queue]
+    delta("\t\t\tlist comprehension sid list", t)
+
+    # >>>> START HERE
+    # 1. eliminate cart
+    # 2. update cart functions to update Shopper.cart_count
+    # 3. eliminate cart.add_inv_item() --> just update the inv in shopper.step()
+    # 4. update get_carts_sids --> list comprehension on non-db lane objects
+
+    t = log()
     all_carts = session.query(ModelCart)\
         .filter(ModelCart.deleted == false())\
         .order_by(ModelCart.shopper_id).all()
+    delta("\t\t\tquery shopping carts", t)
 
     carts = {}
     for inv in all_carts:

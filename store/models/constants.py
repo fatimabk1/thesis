@@ -1,6 +1,7 @@
 from datetime import datetime, time, timedelta
 from enum import IntEnum
 import sys
+import os
 
 
 # --------------------------------------------------------------------- GENERAL
@@ -164,8 +165,7 @@ def delta(message, prev, step=None):
 #         total += td
 #     sum_of_time = sum(map(datetime.datetime.timestamp, lst)
 
-
-def print_tracking():
+def calculate_stats():
     stats = {}
     for perf in tracking:
         if perf.message not in stats:
@@ -173,32 +173,32 @@ def print_tracking():
         stats[perf.message]['lst'].append(perf.value)
 
     for msg in stats:
-        stats[msg]['lst'].sort()
-        stats[msg]['min'] = stats[msg]['lst'][0]
-        stats[msg]['max'] = stats[msg]['lst'][len(stats[msg]['lst']) - 1]
+        stats[msg]['lst'].sort(reverse=True)
+        stats[msg]['min'] = stats[msg]['lst'][len(stats[msg]['lst']) - 1]
+        stats[msg]['max'] = stats[msg]['lst'][0]
+        stats[msg]['sum'] = sum(stats[msg]['lst'], timedelta(0))
+        stats[msg]['count'] = len(stats[msg]['lst'])
         total = timedelta(0)
         for td in stats[msg]['lst']:
             total += td
         stats[msg]['avg'] = total / len(stats[msg]['lst'])
-
-    for msg in stats:
-        print(msg, file=sys.stderr)
-        print("min = ", stats[msg]['min'], file=sys.stderr)
-        print("max = ", stats[msg]['max'], file=sys.stderr)
-        print("avg = ", stats[msg]['avg'], file=sys.stderr)
-        print("\n")
+    return stats
 
 
-    # tracking.sort(key=lambda perf: (perf.message, perf.value), reverse=True)
-    # msg = tracking[0].message
+def print_tracking():
+    i = 0
+    while os.path.exists("store/stats/{}.txt".format(i)):
+        i += 1
+    f = open("store/stats/{}.txt".format(i), 'w')
 
-    # count, total = 0, timedelta(0)
-    # for perf in tracking:
-    #     if msg != perf.message:
-    #         print("AVERAGE = ", total / count, file=sys.stderr)
-    #         print("\n\n NEW MESSAGE \n\n", file=sys.stderr)
-    #         count, total = 0, timedelta(0)
-    #         msg = perf.message
-    #     perf.print()
-    #     count += 1
-    #     total += perf.value
+    stats = calculate_stats()
+    print("\n\n\t ~~~ STATISTICS ~~~\n")
+    for msg in sorted(stats):
+        print(msg, file=f)
+        print("max = ", stats[msg]['max'], file=f)
+        print("min = ", stats[msg]['min'], file=f)
+        print("avg = ", stats[msg]['avg'], file=f)
+        print("sum = ", stats[msg]['sum'], file=f)
+        print("count = ", stats[msg]['count'], file=f)
+        print("\n", file=f)
+    f.close()
