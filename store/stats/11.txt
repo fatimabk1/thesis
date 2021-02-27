@@ -1,0 +1,328 @@
+			Inventory.dispatch() ∆: 
+max =  0:00:00.000778
+min =  0:00:00.000003
+avg =  0:00:00.000020
+sum =  0:00:00.009061
+count =  449
+
+
+			Inventory.pull_inventory(): all_inventory ∆: 
+max =  0:00:01.374998
+min =  0:00:01.374998
+avg =  0:00:01.374998
+sum =  0:00:01.374998
+count =  1
+
+
+			Lane.queue_shopper()) ∆: 
+max =  0:00:00.692220
+min =  0:00:00.000012
+avg =  0:00:00.000405
+sum =  0:00:01.337866
+count =  3300
+
+
+			Shopper select for status=1 ∆: 
+max =  0:00:00.641227
+min =  0:00:00.000053
+avg =  0:00:00.000614
+sum =  0:00:40.071287
+count =  65297
+
+
+			dispatch one grp ∆: 
+max =  0:00:00.000742
+min =  0:00:00.000060
+avg =  0:00:00.000210
+sum =  0:00:00.003771
+count =  18
+
+
+			lookup dictionary ∆: 
+max =  0:00:00.085945
+min =  0:00:00.085945
+avg =  0:00:00.085945
+sum =  0:00:00.085945
+count =  1
+
+
+		Employee.shift_change() ∆: 
+max =  0:00:00.000606
+min =  0:00:00.000606
+avg =  0:00:00.000606
+sum =  0:00:00.000606
+count =  1
+
+
+		Inventory.restock_list() ∆: 
+max =  0:00:00.001609
+min =  0:00:00.000158
+avg =  0:00:00.000314
+sum =  0:00:00.220148
+count =  700
+
+
+		Inventory.toss_list() ∆: 
+max =  0:00:00.283269
+min =  0:00:00.034348
+avg =  0:00:00.053458
+sum =  0:00:06.414963
+count =  120
+
+
+		Inventory.unload_list() ∆: 
+max =  0:00:00.116542
+min =  0:00:00.056764
+avg =  0:00:00.078097
+sum =  0:00:01.561935
+count =  20
+
+
+		Lane.manage() ∆: 
+max =  0:00:00.093753
+min =  0:00:00.000028
+avg =  0:00:00.001148
+sum =  0:00:00.876035
+count =  763
+
+
+		Lane.shift_change() ∆: 
+max =  0:00:00.000308
+min =  0:00:00.000308
+avg =  0:00:00.000308
+sum =  0:00:00.000308
+count =  1
+
+
+		Lane.step() ∆: 
+max =  0:00:02.060009
+min =  0:00:00.000010
+avg =  0:00:00.005576
+sum =  0:02:07.633294
+count =  22890
+
+
+		Shopper.step(status=0) ∆: 
+max =  0:00:00.167379
+min =  0:00:00.000005
+avg =  0:00:00.000017
+sum =  0:00:01.683261
+count =  97096
+
+
+		Shopper.step(status=1) ∆: 
+max =  0:00:00.641419
+min =  0:00:00.000010
+avg =  0:00:00.000274
+sum =  0:00:59.468282
+count =  217226
+
+
+		Shopper.step(status=2) ∆: 
+max =  0:00:00.013362
+min =  0:00:00.000016
+avg =  0:00:00.000044
+sum =  0:00:00.145399
+count =  3300
+
+
+		Shopper.step(status=3) ∆: 
+max =  0:00:00.167252
+min =  0:00:00.000007
+avg =  0:00:00.000034
+sum =  0:00:00.388807
+count =  11551
+
+
+		Shopper.step(status=4) ∆: 
+max =  0:00:00.000853
+min =  0:00:00.000007
+avg =  0:00:00.000019
+sum =  0:00:00.123270
+count =  6470
+
+
+		flush 400 shopper updates ∆: 
+max =  0:00:01.297017
+min =  0:00:00.000006
+avg =  0:00:00.149670
+sum =  0:03:08.734475
+count =  1261
+
+
+		flush employee tasks -- inv updates ∆: 
+max =  0:00:00.030116
+min =  0:00:00.002604
+avg =  0:00:00.006698
+sum =  0:00:00.060283
+count =  9
+
+
+	Committing all day_simulation changes ∆: 
+max =  0:00:00.131277
+min =  0:00:00.000279
+avg =  0:00:00.004874
+sum =  0:00:04.094408
+count =  840
+
+
+	Inventory.pull_inventory ∆: 
+max =  0:00:01.461559
+min =  0:00:01.461559
+avg =  0:00:01.461559
+sum =  0:00:01.461559
+count =  1
+
+
+	SIMULATION_STEP() ∆: 
+max =  0:00:02.998172
+min =  0:00:00.005912
+avg =  0:00:00.573612
+sum =  0:08:01.834137
+count =  840
+
+
+	advance all employees ∆: 
+max =  0:00:00.105232
+min =  0:00:00.004104
+avg =  0:00:00.024469
+sum =  0:00:00.220219
+count =  9
+
+
+	advancing all lanes ∆: 
+max =  0:00:02.504780
+min =  0:00:00.000675
+avg =  0:00:00.168296
+sum =  0:02:08.409994
+count =  763
+
+
+	advancing shoppers ∆: 
+max =  0:00:02.460803
+min =  0:00:00.000088
+avg =  0:00:00.432093
+sum =  0:05:12.403445
+count =  723
+
+
+	collecting tasks...task_type = 0 ∆: 
+max =  0:00:00.116608
+min =  0:00:00.056828
+avg =  0:00:00.078371
+sum =  0:00:01.567425
+count =  20
+
+
+	collecting tasks...task_type = 1 ∆: 
+max =  0:00:00.021947
+min =  0:00:00.000175
+avg =  0:00:00.000411
+sum =  0:00:00.287702
+count =  700
+
+
+	collecting tasks...task_type = 2 ∆: 
+max =  0:00:00.283355
+min =  0:00:00.034414
+avg =  0:00:00.053542
+sum =  0:00:06.425085
+count =  120
+
+
+	create 147 employees: ∆: 
+max =  0:00:00.007006
+min =  0:00:00.007006
+avg =  0:00:00.007006
+sum =  0:00:00.007006
+count =  1
+
+
+	create 30 lanes: ∆: 
+max =  0:00:00.299115
+min =  0:00:00.299115
+avg =  0:00:00.299115
+sum =  0:00:00.299115
+count =  1
+
+
+	create 300 shoppers ∆: 
+max =  0:00:00.592306
+min =  0:00:00.341192
+avg =  0:00:00.434463
+sum =  0:00:04.779097
+count =  11
+
+
+	set_day_schedule() ∆: 
+max =  0:00:00.126666
+min =  0:00:00.126666
+avg =  0:00:00.126666
+sum =  0:00:00.126666
+count =  1
+
+
+Employee.pull_employees() ∆: 
+max =  0:00:00.254221
+min =  0:00:00.002061
+avg =  0:00:00.010712
+sum =  0:00:08.998271
+count =  840
+
+
+flush lanes & shoppers - inside step() ∆: 
+max =  0:00:01.652381
+min =  0:00:00.000001
+avg =  0:00:00.005154
+sum =  0:01:57.980348
+count =  22890
+
+
+query shopper group ∆: 
+max =  0:00:00.129281
+min =  0:00:00.001396
+avg =  0:00:00.013010
+sum =  0:00:10.927997
+count =  840
+
+
+setup_lanes_and_employees() ∆: 
+max =  0:00:00.306262
+min =  0:00:00.306262
+avg =  0:00:00.306262
+sum =  0:00:00.306262
+count =  1
+
+
+shopper select grp ∆: 
+max =  0:00:00.004235
+min =  0:00:00.000003
+avg =  0:00:00.000010
+sum =  0:00:00.683136
+count =  65297
+
+
+shopper select inv, list comprehension ∆: 
+max =  0:00:00.003012
+min =  0:00:00.000004
+avg =  0:00:00.000016
+sum =  0:00:01.073905
+count =  65297
+
+
+shopper select, while loop ∆: 
+max =  0:00:00.002061
+min =  0:00:00.000001
+avg =  0:00:00.000005
+sum =  0:00:00.328406
+count =  65297
+
+
+simulate_day() ∆: 
+max =  0:08:04.110133
+min =  0:08:04.110133
+avg =  0:08:04.110133
+sum =  0:08:04.110133
+count =  1
+
+
